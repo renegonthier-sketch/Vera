@@ -27,7 +27,8 @@ module.exports = async function handler(req, res) {
     const text = await response.text();
     console.log('Anthropic response:', text);
     const data = JSON.parse(text);
-    const reply = data?.content?.[0]?.text || 'Ein Moment bitte.';
+    const raw = data?.content?.[0]?.text || 'Ein Moment bitte.';
+const reply = raw.replace(/—/g, ',').replace(/–/g, ',');
     return res.status(200).json({ reply });
 
   } catch (err) {
