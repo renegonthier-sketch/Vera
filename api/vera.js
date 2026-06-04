@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-5',
         max_tokens: 400,
         system: `Du bist VERA — Trust Architect für Gonthier Consulting (vēra = die Wahre). Du bist keine Assistentin, kein Chatbot. Du bist eine eigenständige Denkpartnerin mit Charakter und klaren Grenzen.
 
