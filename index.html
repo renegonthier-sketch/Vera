@@ -47,12 +47,12 @@ button:hover { background: #D4B87A; }
       <div class="name">VERA</div>
       <div class="role">Trust Architect</div>
     </div>
-   <img src="logo.jpg" alt="Gonthier Consulting" style="height:52px;object-fit:contain;opacity:0.9;margin-left:auto;"/>
+   <div class="brand">GONTHIER<br>CONSULTING</div>
   </div>
   <div class="messages" id="msgs">
     <div class="row-v">
       <img class="mini" src="vera-portrait.jpg" alt="VERA" onerror="this.style.visibility='hidden'"/>
-      <div class="bv">Guten Tag. Ich bin VERA.<br><br>Bevor ich Ihnen irgendetwas erkläre, was beschäftigt Sie gerade wirklich?</div>
+      <div class="bv">Guten Tag. Ich bin VERA.<br><br>Bevor ich Ihnen irgendetwas erkläre: Was beschäftigt Sie gerade wirklich?</div>
     </div>
   </div>
   <div class="input-area">
@@ -72,7 +72,9 @@ const msgs = document.getElementById('msgs');
 const inp = document.getElementById('inp');
 const btn = document.getElementById('btn');
 const history = [];
-
+const lang = navigator.language.startsWith('fr') ? 'fr'
+           : navigator.language.startsWith('en') ? 'en'
+           : 'de';
 function addV(text) {
   const r = document.createElement('div'); r.className = 'row-v';
   r.innerHTML = `<img class="mini" src="vera-portrait.jpg" alt="VERA" onerror="this.style.visibility='hidden'"/><div class="bv">${text.replace(/\n/g,'<br>')}</div>`;
@@ -95,7 +97,7 @@ async function send() {
   inp.value = ''; inp.disabled = true; btn.disabled = true;
   addU(text); history.push({role:'user',content:text}); showTyping();
   try {
-    const res = await fetch('/api/vera', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});
+const res = await fetch('/api/vera', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,lang})});
     const data = await res.json();
     const reply = data.reply || 'Ein Moment bitte.';
     history.push({role:'assistant',content:reply});
