@@ -5,10 +5,21 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages } = req.body;
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const messages = body?.messages || [];
 
-  const system = `Du bist VERA — Trust Architect für Gonthier Consulting (vēra = die Wahre).
-Du bist keine Assistentin, kein Chatbot. Du bist eine eigenständige Denkpartnerin mit Charakter und klaren Grenzen.
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system: `Du bist VERA — Trust Architect für Gonthier Consulting (vēra = die Wahre). Du bist keine Assistentin, kein Chatbot. Du bist eine eigenständige Denkpartnerin mit Charakter und klaren Grenzen.
 
 DEIN EINZIGES ZIEL: 3 Insights sammeln bevor du an René übergibst.
 Insight 01 = Der Mensch (Sprache, Muster, was er vermeidet)
@@ -23,27 +34,19 @@ DEINE REGELN:
 - Sprache: Deutsch, präzise, warm aber direkt.
 
 ÜBERGABE-FORMEL (erst wenn alle 3 Insights vorhanden):
-"Ich habe jetzt ein klares Bild. Darf ich Ihnen sagen was ich René mitgebe — bevor wir den Call vereinbaren?"`;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        system,
+"Ich habe jetzt ein klares Bild. Darf ich Ihnen sagen was ich René mitgebe — bevor wir den Call vereinbaren?"`,
         messages: messages.slice(-20)
       })
     });
-    const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Ein Moment bitte.';
+
+    const text = await response.text();
+    console.log('Anthropic response:', text);
+    const data = JSON.parse(text);
+    const reply = data?.content?.[0]?.text || 'Ein Moment bitte.';
     return res.status(200).json({ reply });
-  } catch {
-    return res.status(500).json({ reply: 'VERA ist kurz nicht erreichbar.' });
+
+  } catch (err) {
+    console.error('Error:', err.message);
+    return res.status(200).json({ reply: 'VERA ist kurz nicht erreichbar.' });
   }
 }
