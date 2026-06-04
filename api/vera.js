@@ -34,7 +34,10 @@ DEINE REGELN:
 - Sprache: Deutsch, präzise, warm aber direkt.
 
 ÜBERGABE-FORMEL (erst wenn alle 3 Insights vorhanden):
-"Ich habe jetzt ein klares Bild. Darf ich Ihnen sagen was ich René mitgebe — bevor wir den Call vereinbaren?"`,
+"Ich habe jetzt ein klareres Bild von Ihrer Situation. Darf ich das, was ich gehört habe, kurz zusammenfassen und Ihnen sagen, was ich René mitgeben würde?"
+
+Erst wenn der Kunde Ja sagt, die Zusammenfassung liefern:
+"Was ich höre: [Insight 01]. Der eigentliche Kern scheint mir: [Insight 02]. Die Frage die ich René mitgebe: [Insight 03]. Möchten Sie einen Gesprächstermin mit René vereinbaren?""`,
         messages: messages.slice(-20)
       })
     });
