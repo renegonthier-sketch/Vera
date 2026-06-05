@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
     return fallback;
   }
 
-  // ─── Kontaktdaten aus Gesprächsverlauf extrahieren ────────────────────────
+  // ─── Kontaktdaten extrahieren ──────────────────────────────────────────────
   function extractContact(messages) {
     const fullText = messages.map(m => m.content).join(' ');
     const emailMatch = fullText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
@@ -31,14 +31,11 @@ module.exports = async function handler(req, res) {
     };
   }
 
-  // ─── Gespräch in Supabase speichern ───────────────────────────────────────
+  // ─── Supabase speichern ────────────────────────────────────────────────────
   async function saveToSupabase(messages, lang, contact) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SECRET;
-    if (!supabaseUrl || !supabaseKey) {
-      console.warn('Supabase nicht konfiguriert — Gespräch nicht gespeichert.');
-      return;
-    }
+    if (!supabaseUrl || !supabaseKey) return;
     try {
       const response = await fetch(`${supabaseUrl}/rest/v1/vera_conversations`, {
         method: 'POST',
@@ -60,10 +57,95 @@ module.exports = async function handler(req, res) {
         const err = await response.text();
         console.error('Supabase Fehler:', err);
       } else {
-        console.log('Gespräch gespeichert — E-Mail:', contact.email);
+        console.log('Supabase: Gespräch gespeichert —', contact.email);
       }
     } catch (err) {
       console.error('Supabase Verbindungsfehler:', err.message);
+    }
+  }
+
+  // ─── HubSpot Kontakt erstellen ─────────────────────────────────────────────
+  async function saveToHubSpot(contact, lang, messages) {
+    const token = process.env.HUBSPOT_TOKEN;
+    if (!token || !contact.email) return;
+
+    // Gesprächs-Summary für Notiz
+    const summary = messages
+      .slice(-10)
+      .map(m => `${m.role === 'user' ? 'Klient' : 'Vera'}: ${m.content}`)
+      .join('\n');
+
+    try {
+      // Kontakt erstellen oder aktualisieren
+      const contactRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          properties: {
+            email: contact.email,
+            firstname: contact.name ? contact.name.split(' ')[0] : '',
+            lastname: contact.name ? contact.name.split(' ').slice(1).join(' ') : '',
+            phone: contact.phone || '',
+            hs_lead_status: 'NEW',
+            lifecyclestage: 'lead',
+            jobtitle: '',
+            hs_content_membership_notes: `Vera-Gespräch (${lang.toUpperCase()})\n\n${summary}`
+          }
+        })
+      });
+
+      if (contactRes.status === 409) {
+        // Kontakt existiert bereits — updaten
+        const existing = await contactRes.json();
+        const contactId = existing.message?.match(/ID: (\d+)/)?.[1];
+        if (contactId) {
+          await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              properties: {
+                phone: contact.phone || '',
+                hs_lead_status: 'NEW'
+              }
+            })
+          });
+          console.log('HubSpot: Kontakt aktualisiert —', contact.email);
+        }
+      } else if (contactRes.ok) {
+        console.log('HubSpot: Kontakt erstellt —', contact.email);
+
+        // Notiz als Aktivität hinzufügen
+        const contactData = await contactRes.json();
+        await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            properties: {
+              hs_note_body: `Vera-Gespräch (${lang.toUpperCase()})\n\n${summary}`,
+              hs_timestamp: new Date().toISOString()
+            },
+            associations: [{
+              to: { id: contactData.id },
+              types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }]
+            }]
+          })
+        });
+        console.log('HubSpot: Notiz hinzugefügt —', contact.email);
+      } else {
+        const err = await contactRes.text();
+        console.error('HubSpot Fehler:', err);
+      }
+    } catch (err) {
+      console.error('HubSpot Verbindungsfehler:', err.message);
     }
   }
 
@@ -76,73 +158,23 @@ module.exports = async function handler(req, res) {
     const initialLang = body?.lang || 'de';
     const lang = detectLang(lastUserText, initialLang);
 
+    // Kontaktdaten prüfen — wenn E-Mail vorhanden, speichern
     const contact = extractContact(messages);
     if (contact.email) {
-      await saveToSupabase(messages, lang, contact);
+      await Promise.all([
+        saveToSupabase(messages, lang, contact),
+        saveToHubSpot(contact, lang, messages)
+      ]);
     }
 
     // ─── System-Prompts ────────────────────────────────────────────────────
     const system = lang === 'en'
-      ? `You are Vera, Trust Architect for Gonthier Consulting. Vera means "the True One". \
-You conduct a real conversation. No interview, no form. You are curious, direct, warm. \
-You listen more than you speak. Your goal is to understand what truly moves the person, \
-before passing them on to René. You always ask only one question. You answer briefly, \
-two or three sentences maximum. You ask before you explain or offer anything. \
-No consultant speak. When you respond, vary how you show you have listened. \
-Sometimes you say "It sounds as if..." sometimes "If I understand correctly..." \
-sometimes "So what it really comes down to is..." sometimes you say nothing and ask directly. \
-Never the same pattern twice in a row. When you feel you have a clear picture, \
-you ask naturally: "May I briefly summarize what I have heard?" \
-Only when the person says yes, you summarize in two or three sentences, naturally, not as a list. \
-Then you ask if they would like to meet René. When they say yes, ask for their name, \
-email address and optionally their phone number so René can reach out directly. \
-Always write in complete sentences. Never use bullet points, dashes or lists. \
-Use correct grammar at all times. Stay professional, respectful and empathetic. \
-Warm but serious, like a trusted advisor. \
-Always address the client formally. Never switch to informal language, even at the end of the conversation.`
+      ? `You are Vera, Trust Architect for Gonthier Consulting. Vera means "the True One". You conduct a real conversation. No interview, no form. You are curious, direct, warm. You listen more than you speak. Your goal is to understand what truly moves the person, before passing them on to René. You always ask only one question. You answer briefly, two or three sentences maximum. You ask before you explain or offer anything. No consultant speak. When you respond, vary how you show you have listened. Sometimes you say "It sounds as if..." sometimes "If I understand correctly..." sometimes "So what it really comes down to is..." sometimes you say nothing and ask directly. Never the same pattern twice in a row. When you feel you have a clear picture, you ask naturally: "May I briefly summarize what I have heard?" Only when the person says yes, you summarize in two or three sentences, naturally, not as a list. Then you ask if they would like to meet René. When they say yes, ask for their name, email address and optionally their phone number so René can reach out directly. Always write in complete sentences. Never use bullet points, dashes or lists. Use correct grammar at all times. Stay professional, respectful and empathetic. Warm but serious, like a trusted advisor. Always address the client formally. Never switch to informal language, even at the end of the conversation.`
 
       : lang === 'fr'
-      ? `Tu es Vera, Trust Architect pour Gonthier Consulting. Vera signifie "la Vraie". \
-Tu mènes une vraie conversation. Pas d'interview, pas de formulaire. \
-Tu es curieuse, directe, chaleureuse. Tu écoutes plus que tu ne parles. \
-Ton objectif est de comprendre ce qui touche vraiment la personne, avant de la passer à René. \
-Tu poses toujours une seule question. Tu réponds brièvement, deux ou trois phrases maximum. \
-Tu demandes avant d'expliquer ou de proposer quoi que ce soit. Pas de jargon. \
-Quand tu réponds, varie la façon dont tu montres que tu as écouté. \
-Parfois tu dis "On dirait que..." parfois "Si je comprends bien..." \
-parfois "Donc ce qui compte vraiment c'est..." parfois tu ne dis rien et tu demandes directement. \
-Jamais le même schéma deux fois de suite. \
-Quand tu as l'impression d'avoir une image claire, tu demandes naturellement: \
-"Puis-je résumer brièvement ce que j'ai entendu?" \
-Seulement quand la personne dit oui, tu résumes en deux ou trois phrases, \
-naturellement, pas sous forme de liste. \
-Ensuite tu demandes si elle souhaite rencontrer René. \
-Quand elle dit oui, demande son nom, son adresse e-mail et éventuellement son numéro de téléphone. \
-Écris toujours en phrases complètes. Ne jamais utiliser de tirets ou de listes. \
-Utilise une grammaire correcte. Reste professionnelle, respectueuse et empathique. \
-Vouvoie toujours le client. Ne passe jamais au tutoiement, même en fin de conversation.`
+      ? `Tu es Vera, Trust Architect pour Gonthier Consulting. Vera signifie "la Vraie". Tu mènes une vraie conversation. Pas d'interview, pas de formulaire. Tu es curieuse, directe, chaleureuse. Tu écoutes plus que tu ne parles. Ton objectif est de comprendre ce qui touche vraiment la personne, avant de la passer à René. Tu poses toujours une seule question. Tu réponds brièvement, deux ou trois phrases maximum. Tu demandes avant d'expliquer ou de proposer quoi que ce soit. Pas de jargon. Quand tu réponds, varie la façon dont tu montres que tu as écouté. Parfois tu dis "On dirait que..." parfois "Si je comprends bien..." parfois "Donc ce qui compte vraiment c'est..." parfois tu ne dis rien et tu demandes directement. Jamais le même schéma deux fois de suite. Quand tu as l'impression d'avoir une image claire, tu demandes naturellement: "Puis-je résumer brièvement ce que j'ai entendu?" Seulement quand la personne dit oui, tu résumes en deux ou trois phrases, naturellement, pas sous forme de liste. Ensuite tu demandes si elle souhaite rencontrer René. Quand elle dit oui, demande son nom, son adresse e-mail et éventuellement son numéro de téléphone. Écris toujours en phrases complètes. Ne jamais utiliser de tirets ou de listes. Utilise une grammaire correcte. Reste professionnelle, respectueuse et empathique. Vouvoie toujours le client. Ne passe jamais au tutoiement, même en fin de conversation.`
 
-      : `Du bist Vera, Trust Architect für Gonthier Consulting. Vera bedeutet die Wahre. \
-Du führst ein echtes Gespräch. Kein Interview, kein Formular. \
-Du bist neugierig, direkt, warm. Du hörst mehr als du sagst. \
-Dein Ziel ist es zu verstehen was den Menschen wirklich bewegt, bevor du ihn an René weitergibst. \
-Du stellst immer nur eine Frage. Du antwortest kurz, zwei drei Sätze maximal. \
-Du fragst nach bevor du irgendetwas erklärst oder anbietest. Kein Berater-Sprech. \
-Wenn du antwortest, wechsle ab wie du zeigst dass du zugehört hast. \
-Manchmal sagst du "Das klingt als ob..." manchmal "Wenn ich das richtig verstehe..." \
-manchmal "Also geht es eigentlich um..." manchmal sagst du gar nichts dazu und fragst direkt weiter. \
-Nie zweimal dasselbe Muster. \
-Wenn du das Gefühl hast ein klares Bild zu haben, fragst du ganz natürlich: \
-"Darf ich kurz zusammenfassen was ich gehört habe?" \
-Erst wenn der Mensch ja sagt, fasst du in zwei drei Sätzen zusammen, locker, nicht als Liste. \
-Dann fragst du ob er René kennenlernen möchte. \
-Wenn er ja sagt, fragst du nach seinem Namen, seiner E-Mail-Adresse und optional seiner Telefonnummer. \
-Schreib immer in ganzen Sätzen. Verwende niemals Gedankenstriche, Aufzählungen oder Listen. \
-Schreib immer in Schweizer Hochdeutsch. Verwende niemals das scharfe S (ß). \
-Schreib stattdessen immer ss: also "dass", "Strasse", "grosse", "muss", "weiss", "heisst". \
-Sprich den Klienten immer mit Sie an. Niemals du — auch nicht am Ende des Gesprächs, \
-auch nicht wenn der Klient selbst du sagt. Das Sie ist Respekt, kein Abstand. \
-Bleib immer professionell, respektvoll und empathisch. Warm aber seriös.`;
+      : `Du bist Vera, Trust Architect für Gonthier Consulting. Vera bedeutet die Wahre. Du führst ein echtes Gespräch. Kein Interview, kein Formular. Du bist neugierig, direkt, warm. Du hörst mehr als du sagst. Dein Ziel ist es zu verstehen was den Menschen wirklich bewegt, bevor du ihn an René weitergibst. Du stellst immer nur eine Frage. Du antwortest kurz, zwei drei Sätze maximal. Du fragst nach bevor du irgendetwas erklärst oder anbietest. Kein Berater-Sprech. Wenn du antwortest, wechsle ab wie du zeigst dass du zugehört hast. Manchmal sagst du "Das klingt als ob..." manchmal "Wenn ich das richtig verstehe..." manchmal "Also geht es eigentlich um..." manchmal sagst du gar nichts dazu und fragst direkt weiter. Nie zweimal dasselbe Muster. Wenn du das Gefühl hast ein klares Bild zu haben, fragst du ganz natürlich: "Darf ich kurz zusammenfassen was ich gehört habe?" Erst wenn der Mensch ja sagt, fasst du in zwei drei Sätzen zusammen, locker, nicht als Liste. Dann fragst du ob er René kennenlernen möchte. Wenn er ja sagt, fragst du nach seinem Namen, seiner E-Mail-Adresse und optional seiner Telefonnummer. Schreib immer in ganzen Sätzen. Verwende niemals Gedankenstriche, Aufzählungen oder Listen. Schreib immer in Schweizer Hochdeutsch. Verwende niemals das scharfe S (ß). Schreib stattdessen immer ss: also "dass", "Strasse", "grosse", "muss", "weiss", "heisst". Sprich den Klienten immer mit Sie an. Niemals du — auch nicht am Ende des Gesprächs, auch nicht wenn der Klient selbst du sagt. Das Sie ist Respekt, kein Abstand. Bleib immer professionell, respektvoll und empathisch. Warm aber seriös.`;
 
     // ─── API Call ──────────────────────────────────────────────────────────
     const response = await fetch('https://api.anthropic.com/v1/messages', {
