@@ -7,12 +7,12 @@
 <meta http-equiv="cache-control" content="no-cache">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   background: transparent;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
 }
 .shell {
   background: #0D1B35;
@@ -33,8 +33,8 @@ body {
   flex-shrink: 0;
 }
 .avatar {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   object-position: center top;
@@ -47,23 +47,24 @@ body {
   border-radius: 50%;
   border: 2px solid #0D1B35;
   margin-left: -14px;
-  margin-top: 32px;
+  margin-top: 42px;
   animation: pulse 2.5s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 .name {
-  font-size: 16px;
+  font-size: 18px;
   color: #E8EDF5;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 .role {
   font-size: 11px;
   color: #C9A96E;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  font-style: italic;
 }
 .messages {
   flex: 1;
@@ -87,13 +88,14 @@ body {
   background: #1C3058;
   border-radius: 4px 14px 14px 14px;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 15px;
   color: #C8D4E8;
-  line-height: 1.75;
+  line-height: 1.8;
   max-width: 290px;
   border-left: 2px solid #C9A96E;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 300;
+  font-style: italic;
 }
 .row-u { display: flex; justify-content: flex-end; }
 .bu {
@@ -101,11 +103,11 @@ body {
   border: 0.5px solid rgba(255,255,255,0.1);
   border-radius: 14px 4px 14px 14px;
   padding: 11px 15px;
-  font-size: 14px;
+  font-size: 15px;
   color: #A8B8CC;
-  line-height: 1.65;
+  line-height: 1.7;
   max-width: 270px;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
 }
 .typing {
@@ -145,12 +147,12 @@ input {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: 15px;
   color: #C8D4E8;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
 }
-input::placeholder { color: #3A5070; }
+input::placeholder { color: #3A5070; font-style: italic; }
 button {
   width: 34px;
   height: 34px;
@@ -173,14 +175,16 @@ button:hover { background: #D4B87A; }
 }
 .fg {
   color: rgba(201,169,110,0.4);
-  font-size: 10px;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
-  letter-spacing: 0.05em;
+  font-size: 11px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: 0.08em;
+  font-style: italic;
 }
 .ft {
   font-size: 10px;
   color: #2E4560;
-  font-family: 'Avenir Next', 'Avenir', 'Nunito', 'Segoe UI', Arial, sans-serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
 }
 </style>
 </head>
