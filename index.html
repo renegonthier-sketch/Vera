@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VERA</title>
+<title>Vera</title>
 <meta http-equiv="cache-control" content="no-cache">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -188,18 +188,18 @@ button:hover { background: #D4B87A; }
 <div class="shell">
   <div class="header">
     <div style="position:relative;flex-shrink:0">
-      <img class="avatar" src="vera-portrait.jpg" alt="VERA" onerror="this.style.background='#1C3058'"/>
+      <img class="avatar" src="vera-portrait.jpg" alt="Vera" onerror="this.style.background='#1C3058'"/>
       <div class="dot"></div>
     </div>
     <div>
-      <div class="name">VERA</div>
+      <div class="name">Vera</div>
       <div class="role">Trust Architect</div>
     </div>
   </div>
   <div class="messages" id="msgs">
     <div class="row-v">
-      <img class="mini" src="vera-portrait.jpg" alt="VERA" onerror="this.style.visibility='hidden'"/>
-      <div class="bv" id="first-msg">Guten Tag. Ich bin VERA.<br><br>Bevor ich Ihnen irgendetwas erkläre: Was beschäftigt Sie gerade wirklich?</div>
+      <img class="mini" src="vera-portrait.jpg" alt="Vera" onerror="this.style.visibility='hidden'"/>
+      <div class="bv" id="first-msg">Guten Tag. Ich bin Vera.<br><br>Bevor ich Ihnen irgendetwas erkläre: Was beschäftigt Sie gerade wirklich?</div>
     </div>
   </div>
   <div class="input-area">
@@ -224,9 +224,9 @@ const lang = navigator.language.startsWith('fr') ? 'fr'
            : 'de';
 
 const firstMsg = {
-  de: 'Guten Tag. Ich bin VERA.<br><br>Bevor ich Ihnen irgendetwas erkläre: Was beschäftigt Sie gerade wirklich?',
-  en: 'Good day. I am VERA.<br><br>Before I explain anything: What is really on your mind right now?',
-  fr: 'Bonjour. Je suis VERA.<br><br>Avant de vous expliquer quoi que ce soit: Qu\'est-ce qui vous préoccupe vraiment en ce moment?'
+  de: 'Guten Tag. Ich bin Vera.<br><br>Bevor ich Ihnen irgendetwas erkläre: Was beschäftigt Sie gerade wirklich?',
+  en: 'Good day. I am Vera.<br><br>Before I explain anything: What is really on your mind right now?',
+  fr: 'Bonjour. Je suis Vera.<br><br>Avant de vous expliquer quoi que ce soit: Qu\'est-ce qui vous préoccupe vraiment en ce moment?'
 };
 const placeholder = { de: 'Ihre Antwort...', en: 'Your answer...', fr: 'Votre réponse...' };
 
@@ -235,7 +235,7 @@ inp.placeholder = placeholder[lang] || placeholder.de;
 
 function addV(text) {
   const r = document.createElement('div'); r.className = 'row-v';
-  r.innerHTML = `<img class="mini" src="vera-portrait.jpg" alt="VERA" onerror="this.style.visibility='hidden'"/><div class="bv">${text.replace(/\n/g,'<br>')}</div>`;
+  r.innerHTML = `<img class="mini" src="vera-portrait.jpg" alt="Vera" onerror="this.style.visibility='hidden'"/><div class="bv">${text.replace(/\n/g,'<br>')}</div>`;
   msgs.appendChild(r); msgs.scrollTop = msgs.scrollHeight;
 }
 function addU(text) {
@@ -245,7 +245,7 @@ function addU(text) {
 }
 function showTyping() {
   const r = document.createElement('div'); r.className = 'row-v'; r.id = 'typing';
-  r.innerHTML = `<img class="mini" src="vera-portrait.jpg" alt="VERA" onerror="this.style.visibility='hidden'"/><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  r.innerHTML = `<img class="mini" src="vera-portrait.jpg" alt="Vera" onerror="this.style.visibility='hidden'"/><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
   msgs.appendChild(r); msgs.scrollTop = msgs.scrollHeight;
 }
 function removeTyping() { document.getElementById('typing')?.remove(); }
