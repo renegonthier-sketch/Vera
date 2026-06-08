@@ -14,43 +14,6 @@ body {
   background: transparent;
   font-family: 'Cormorant Garamond', Georgia, serif;
 }
-.privacy-banner {
-  max-width: 420px;
-  margin: 0 auto 10px;
-  padding: 12px 18px;
-  background: rgba(13,27,53,0.7);
-  border: 0.5px solid rgba(201,169,110,0.2);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  transition: opacity 0.4s;
-}
-.privacy-text {
-  font-size: 11px;
-  color: #7A9ABF;
-  line-height: 1.6;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: italic;
-}
-.privacy-btn {
-  font-size: 11px;
-  color: #C9A96E;
-  background: transparent;
-  border: 0.5px solid rgba(201,169,110,0.3);
-  border-radius: 6px;
-  padding: 4px 12px;
-  cursor: pointer;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: italic;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  flex-shrink: 0;
-  width: auto;
-  height: auto;
-}
-.privacy-btn:hover { background: rgba(201,169,110,0.08); }
 .shell {
   background: #0D1B35;
   border-radius: 20px;
@@ -172,7 +135,7 @@ body {
 .td:nth-child(3){animation-delay:.4s}
 @keyframes td { 0%,80%,100%{opacity:.25;transform:scale(.85)} 40%{opacity:1;transform:scale(1)} }
 .input-area {
-  padding: 12px 16px 16px;
+  padding: 12px 16px 10px;
   border-top: 0.5px solid rgba(255,255,255,0.09);
   flex-shrink: 0;
 }
@@ -215,11 +178,40 @@ button {
 button:hover { background: #D4B87A; }
 .footer {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 16px 10px;
+  flex-shrink: 0;
+}
+.privacy-bar {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px;
+  gap: 8px;
+  transition: opacity 0.4s;
 }
+.pt {
+  font-size: 10px;
+  color: #7A9ABF;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+.privacy-ok {
+  font-size: 10px;
+  color: rgba(201,169,110,0.8);
+  background: transparent;
+  border: 0.5px solid rgba(201,169,110,0.4);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  width: auto;
+  height: auto;
+}
+.privacy-ok:hover { color: #C9A96E; border-color: rgba(201,169,110,0.7); }
 .fg {
   color: rgba(201,169,110,0.4);
   font-size: 11px;
@@ -236,12 +228,6 @@ button:hover { background: #D4B87A; }
 </style>
 </head>
 <body>
-
-<div class="privacy-banner" id="privacy">
-  <span class="privacy-text" id="privacy-text"></span>
-  <button class="privacy-btn" id="privacy-btn" onclick="closePrivacy()"></button>
-</div>
-
 <div class="shell">
   <div class="header">
     <div class="avatar-wrap">
@@ -269,9 +255,16 @@ button:hover { background: #D4B87A; }
       </button>
     </div>
   </div>
-  <div class="footer"><span class="fg">vēra</span><span class="ft">· Gonthier Consulting</span></div>
+  <div class="footer">
+    <div class="privacy-bar" id="privacy-bar">
+      <span class="pt" id="privacy-text"></span>
+      <button class="privacy-ok" id="privacy-btn" onclick="closePrivacy()"></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="fg">vēra</span><span class="ft">· Gonthier Consulting</span>
+    </div>
+  </div>
 </div>
-
 <script>
 const msgs = document.getElementById('msgs');
 const inp = document.getElementById('inp');
@@ -294,9 +287,9 @@ const placeholder = {
 };
 
 const privacyTexts = {
-  de: { text: 'Was Sie hier schreiben, bleibt vertraulich. Gespräche werden auf Servern in der EU gespeichert und nach 90 Tagen automatisch gelöscht.', btn: 'Verstanden' },
-  fr: { text: 'Ce que vous écrivez ici reste confidentiel. Les conversations sont stockées sur des serveurs en Europe et supprimées après 90 jours.', btn: 'Compris' },
-  en: { text: 'What you write here stays confidential. Conversations are stored on EU servers and automatically deleted after 90 days.', btn: 'Understood' }
+  de: { text: 'Vertraulich · EU-Server · gelöscht nach 90 Tagen', btn: 'OK' },
+  fr: { text: 'Confidentiel · Serveurs EU · supprimé après 90 jours', btn: 'OK' },
+  en: { text: 'Confidential · EU servers · deleted after 90 days', btn: 'OK' }
 };
 
 const pt = privacyTexts[lang] || privacyTexts.de;
@@ -304,8 +297,9 @@ document.getElementById('privacy-text').textContent = pt.text;
 document.getElementById('privacy-btn').textContent = pt.btn;
 
 function closePrivacy() {
-  const el = document.getElementById('privacy');
+  const el = document.getElementById('privacy-bar');
   el.style.opacity = '0';
+  el.style.transition = 'opacity 0.4s';
   setTimeout(() => el.style.display = 'none', 400);
 }
 
