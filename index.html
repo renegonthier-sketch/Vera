@@ -11,25 +11,122 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background: transparent;
   font-family: 'Cormorant Garamond', Georgia, serif;
+  background: transparent;
 }
+
+/* Trigger Button */
+.vera-trigger {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0D1B35;
+  border: 1px solid rgba(201,169,110,0.4);
+  border-radius: 50px;
+  padding: 10px 20px 10px 12px;
+  cursor: pointer;
+  z-index: 999;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  transition: border-color 0.2s;
+}
+.vera-trigger:hover { border-color: rgba(201,169,110,0.8); }
+.vera-trigger-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(201,169,110,0.4);
+}
+.vera-trigger-text {
+  display: flex;
+  flex-direction: column;
+}
+.vera-trigger-name {
+  font-size: 14px;
+  color: #FFFFFF;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+.vera-trigger-sub {
+  font-size: 11px;
+  color: #D4B87A;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.06em;
+}
+.vera-trigger-dot {
+  width: 8px;
+  height: 8px;
+  background: #4CAF80;
+  border-radius: 50%;
+  border: 1.5px solid #0D1B35;
+  position: absolute;
+  top: 8px;
+  left: 42px;
+  animation: pulse 2.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Overlay */
+.vera-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+.vera-overlay.open { display: flex; }
+
+/* Shell */
 .shell {
   background: #0D1B35;
   border-radius: 20px;
   overflow: hidden;
+  width: 100%;
   max-width: 420px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   height: 560px;
+  position: relative;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+  animation: fadeUp 0.2s ease;
 }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  z-index: 10;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+}
+.close-btn:hover { color: rgba(255,255,255,0.7); background: transparent; }
+
 .header {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 20px;
-  border-bottom: 0.5px solid rgba(255,255,255,0.07);
+  padding: 18px 48px 18px 20px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.09);
   flex-shrink: 0;
 }
 .avatar {
@@ -50,7 +147,6 @@ body {
   margin-top: 50px;
   animation: pulse 2.5s infinite;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 .name {
   font-size: 20px;
   color: #FFFFFF;
@@ -99,12 +195,12 @@ body {
 }
 .row-u { display: flex; justify-content: flex-end; }
 .bu {
-  background: rgba(255,255,255,0.05);
-  border: 0.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.07);
+  border: 0.5px solid rgba(255,255,255,0.15);
   border-radius: 14px 4px 14px 14px;
   padding: 11px 15px;
   font-size: 15px;
-  color: #C8D4E8;
+  color: #E8EDF5;
   line-height: 1.7;
   max-width: 270px;
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -129,18 +225,18 @@ body {
 .td:nth-child(3){animation-delay:.4s}
 @keyframes td { 0%,80%,100%{opacity:.25;transform:scale(.85)} 40%{opacity:1;transform:scale(1)} }
 .input-area {
-  padding: 10px 16px 14px;
-  border-top: 0.5px solid rgba(255,255,255,0.06);
+  padding: 12px 16px 16px;
+  border-top: 0.5px solid rgba(255,255,255,0.09);
   flex-shrink: 0;
 }
 .input-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #162845;
+  background: #1C3058;
   border-radius: 28px;
-  padding: 10px 10px 10px 18px;
-  border: 0.5px solid rgba(255,255,255,0.08);
+  padding: 12px 12px 12px 20px;
+  border: 0.5px solid rgba(255,255,255,0.18);
 }
 input {
   flex: 1;
@@ -152,7 +248,7 @@ input {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
 }
-input::placeholder { color: #5A7A9A; font-style: italic; }
+input::placeholder { color: #7A9ABA; font-style: italic; }
 button {
   width: 34px;
   height: 34px;
@@ -189,40 +285,62 @@ button:hover { background: #D4B87A; }
 </style>
 </head>
 <body>
-<div class="shell">
-  <div class="header">
-    <div style="position:relative;flex-shrink:0">
-      <img class="avatar" src="vera-portrait.jpg" alt="Vera" onerror="this.style.background='#1C3058'"/>
-      <div class="dot"></div>
-    </div>
-    <div>
-      <div class="name">Vera</div>
-      <div class="role">Trust Architect</div>
-    </div>
+
+<!-- Trigger Button -->
+<div class="vera-trigger" id="triggerBtn">
+  <div style="position:relative;flex-shrink:0">
+    <img class="vera-trigger-avatar" src="vera-portrait.jpg" alt="Vera" onerror="this.style.background='#1C3058'"/>
+    <div class="vera-trigger-dot"></div>
   </div>
-  <div class="messages" id="msgs">
-    <div class="row-v">
-      <img class="mini" src="vera-portrait.jpg" alt="Vera" onerror="this.style.visibility='hidden'"/>
-      <div class="bv" id="first-msg"></div>
-    </div>
+  <div class="vera-trigger-text">
+    <span class="vera-trigger-name">Vera</span>
+    <span class="vera-trigger-sub">Jetzt sprechen</span>
   </div>
-  <div class="input-area">
-    <div class="input-row">
-      <input id="inp" type="text" maxlength="400"/>
-      <button id="btn" aria-label="Senden">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M2 7h10M7 2l5 5-5 5" stroke="#0D1B35" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-  <div class="footer"><span class="fg">vēra</span><span class="ft">· Gonthier Consulting</span></div>
 </div>
+
+<!-- Overlay + Chat -->
+<div class="vera-overlay" id="overlay">
+  <div class="shell">
+    <button class="close-btn" id="closeBtn" aria-label="Schliessen">✕</button>
+    <div class="header">
+      <div style="position:relative;flex-shrink:0">
+        <img class="avatar" src="vera-portrait.jpg" alt="Vera" onerror="this.style.background='#1C3058'"/>
+        <div class="dot"></div>
+      </div>
+      <div>
+        <div class="name">Vera</div>
+        <div class="role">Trust Architect</div>
+      </div>
+    </div>
+    <div class="messages" id="msgs">
+      <div class="row-v">
+        <img class="mini" src="vera-portrait.jpg" alt="Vera" onerror="this.style.visibility='hidden'"/>
+        <div class="bv" id="first-msg"></div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-row">
+        <input id="inp" type="text" maxlength="400"/>
+        <button id="btn" aria-label="Senden">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 7h10M7 2l5 5-5 5" stroke="#0D1B35" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="footer"><span class="fg">vēra</span><span class="ft">· Gonthier Consulting</span></div>
+  </div>
+</div>
+
 <script>
 const msgs = document.getElementById('msgs');
 const inp = document.getElementById('inp');
 const btn = document.getElementById('btn');
+const overlay = document.getElementById('overlay');
+const triggerBtn = document.getElementById('triggerBtn');
+const closeBtn = document.getElementById('closeBtn');
 const history = [];
+
 const lang = navigator.language.startsWith('fr') ? 'fr'
            : navigator.language.startsWith('en') ? 'en'
            : 'de';
@@ -239,8 +357,33 @@ const placeholder = {
   fr: 'Écrivez — même si ce n\'est pas encore clair.'
 };
 
+const triggerLabel = {
+  de: 'Jetzt sprechen',
+  en: 'Talk now',
+  fr: 'Parler maintenant'
+};
+
 document.getElementById('first-msg').innerHTML = firstMsg[lang] || firstMsg.de;
 inp.placeholder = placeholder[lang] || placeholder.de;
+document.querySelector('.vera-trigger-sub').textContent = triggerLabel[lang] || triggerLabel.de;
+
+triggerBtn.addEventListener('click', () => {
+  overlay.classList.add('open');
+  triggerBtn.style.display = 'none';
+  inp.focus();
+});
+
+closeBtn.addEventListener('click', () => {
+  overlay.classList.remove('open');
+  triggerBtn.style.display = 'flex';
+});
+
+overlay.addEventListener('click', (e) => {
+  if (e.target === overlay) {
+    overlay.classList.remove('open');
+    triggerBtn.style.display = 'flex';
+  }
+});
 
 function addV(text) {
   const r = document.createElement('div'); r.className = 'row-v';
