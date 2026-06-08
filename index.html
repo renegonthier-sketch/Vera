@@ -32,6 +32,13 @@ body {
   border-bottom: 0.5px solid rgba(255,255,255,0.09);
   flex-shrink: 0;
 }
+.avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
 .avatar {
   width: 64px;
   height: 64px;
@@ -39,18 +46,16 @@ body {
   object-fit: cover;
   object-position: center top;
   border: 1.5px solid rgba(201,169,110,0.5);
+  display: block;
 }
-.dot {
-  width: 10px;
-  height: 10px;
+.online-dot {
+  width: 8px;
+  height: 8px;
   background: #4CAF80;
   border-radius: 50%;
-  border: 2px solid #0D1B35;
-  margin-left: -14px;
-  margin-top: 50px;
-  animation: pulse 2.5s infinite;
+  animation: blink 1.4s infinite;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 .name {
   font-size: 20px;
   color: #FFFFFF;
@@ -194,9 +199,9 @@ button:hover { background: #D4B87A; }
 <body>
 <div class="shell">
   <div class="header">
-    <div style="position:relative;flex-shrink:0">
+    <div class="avatar-wrap">
       <img class="avatar" src="vera-portrait.jpg" alt="Vera" onerror="this.style.background='#1C3058'"/>
-      <div class="dot"></div>
+      <div class="online-dot"></div>
     </div>
     <div>
       <div class="name">Vera</div>
