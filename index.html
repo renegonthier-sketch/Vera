@@ -244,6 +244,15 @@ button {
       <img class="mini" src="vera-portrait.jpg" alt="Vera" onerror="this.style.visibility='hidden'"/>
       <div class="bv" id="first-msg"></div>
     </div>
+    <div id="disclaimer" style="
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.22);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      padding: 4px 16px 8px;
+      line-height: 1.5;
+    ">Gespräche werden nach 90 Tagen gelöscht. Keine Weitergabe an Dritte.</div>
   </div>
   <div class="input-area">
     <div class="input-row">
@@ -315,6 +324,7 @@ async function send() {
   const text = inp.value.trim(); if (!text) return;
   inp.value = ''; inp.disabled = true; btn.disabled = true;
   addU(text);
+  document.getElementById('disclaimer')?.remove();
   history.push({ role: 'user', content: text });
   showTyping();
   try {
