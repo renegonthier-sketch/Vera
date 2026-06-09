@@ -247,12 +247,26 @@ button {
     <div id="disclaimer" style="
       text-align: center;
       font-size: 11px;
-      color: rgba(255,255,255,0.22);
+      color: rgba(255,255,255,0.28);
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-style: italic;
-      padding: 4px 16px 8px;
-      line-height: 1.5;
-    ">Gespräche werden nach 90 Tagen gelöscht. Keine Weitergabe an Dritte.</div>
+      padding: 8px 16px 4px;
+      line-height: 1.7;
+    ">
+      Gespräche werden nach 90 Tagen gelöscht.<br>Keine Weitergabe an Dritte.
+      <br><br>
+      <span onclick="document.getElementById('disclaimer').remove()" style="
+        display: inline-block;
+        font-size: 10px;
+        color: rgba(201,169,110,0.5);
+        border: 0.5px solid rgba(201,169,110,0.3);
+        border-radius: 20px;
+        padding: 3px 14px;
+        cursor: pointer;
+        font-style: normal;
+        letter-spacing: 0.08em;
+      ">OK</span>
+    </div>
   </div>
   <div class="input-area">
     <div class="input-row">
