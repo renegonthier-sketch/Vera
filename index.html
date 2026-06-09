@@ -28,45 +28,39 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 18px 20px;
-  border-bottom: 0.5px solid rgba(255,255,255,0.09);
-  flex-shrink: 0;
-}
-.avatar-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  padding: 16px 20px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.07);
   flex-shrink: 0;
 }
 .avatar {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   object-position: center top;
   border: 1.5px solid rgba(201,169,110,0.5);
-  display: block;
 }
-.online-dot {
-  width: 8px;
-  height: 8px;
+.dot {
+  width: 10px;
+  height: 10px;
   background: #4CAF80;
   border-radius: 50%;
-  animation: blink 1.4s infinite;
-  margin-top: 1px;
+  border: 2px solid #0D1B35;
+  margin-left: -14px;
+  margin-top: 42px;
+  animation: pulse 2.5s infinite;
 }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 .name {
-  font-size: 20px;
-  color: #FFFFFF;
+  font-size: 18px;
+  color: #E8EDF5;
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
 .role {
-  font-size: 12px;
-  color: #D4B87A;
+  font-size: 11px;
+  color: #C9A96E;
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
   letter-spacing: 0.1em;
@@ -105,12 +99,12 @@ body {
 }
 .row-u { display: flex; justify-content: flex-end; }
 .bu {
-  background: rgba(255,255,255,0.07);
-  border: 0.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  border: 0.5px solid rgba(255,255,255,0.1);
   border-radius: 14px 4px 14px 14px;
   padding: 11px 15px;
   font-size: 15px;
-  color: #E8EDF5;
+  color: #C8D4E8;
   line-height: 1.7;
   max-width: 270px;
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -135,34 +129,30 @@ body {
 .td:nth-child(3){animation-delay:.4s}
 @keyframes td { 0%,80%,100%{opacity:.25;transform:scale(.85)} 40%{opacity:1;transform:scale(1)} }
 .input-area {
-  padding: 12px 16px 10px;
-  border-top: 0.5px solid rgba(255,255,255,0.09);
+  padding: 10px 16px 14px;
+  border-top: 0.5px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
 }
 .input-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #2E5090;
+  background: #162845;
   border-radius: 28px;
-  padding: 12px 12px 12px 20px;
-  border: 1.5px solid #C9A96E;
-}
-.input-row:focus-within {
-  border-color: #E8C97A;
-  background: #355AAA;
+  padding: 10px 10px 10px 18px;
+  border: 0.5px solid rgba(255,255,255,0.08);
 }
 input {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
-  font-size: 16px;
-  color: #FFFFFF;
+  font-size: 15px;
+  color: #E8EDF5;
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
 }
-input::placeholder { color: #9BBCE0; font-style: italic; }
+input::placeholder { color: #5A7A9A; font-style: italic; }
 button {
   width: 34px;
   height: 34px;
@@ -178,40 +168,11 @@ button {
 button:hover { background: #D4B87A; }
 .footer {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 16px 10px;
-  flex-shrink: 0;
-}
-.privacy-bar {
-  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  transition: opacity 0.4s;
+  gap: 6px;
+  padding: 8px;
 }
-.pt {
-  font-size: 10px;
-  color: #B8CDE0;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: italic;
-  letter-spacing: 0.02em;
-}
-.privacy-ok {
-  font-size: 10px;
-  color: rgba(201,169,110,0.8);
-  background: transparent;
-  border: 0.5px solid rgba(201,169,110,0.4);
-  border-radius: 4px;
-  padding: 2px 8px;
-  cursor: pointer;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: italic;
-  width: auto;
-  height: auto;
-}
-.privacy-ok:hover { color: #C9A96E; border-color: rgba(201,169,110,0.7); }
 .fg {
   color: rgba(201,169,110,0.4);
   font-size: 11px;
@@ -221,7 +182,7 @@ button:hover { background: #D4B87A; }
 }
 .ft {
   font-size: 10px;
-  color: #6A8AAA;
+  color: #2E4560;
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-style: italic;
 }
@@ -230,9 +191,9 @@ button:hover { background: #D4B87A; }
 <body>
 <div class="shell">
   <div class="header">
-    <div class="avatar-wrap">
+    <div style="position:relative;flex-shrink:0">
       <img class="avatar" src="vera-portrait.jpg" alt="Vera" onerror="this.style.background='#1C3058'"/>
-      <div class="online-dot"></div>
+      <div class="dot"></div>
     </div>
     <div>
       <div class="name">Vera</div>
@@ -255,15 +216,7 @@ button:hover { background: #D4B87A; }
       </button>
     </div>
   </div>
-  <div class="footer">
-    <div class="privacy-bar" id="privacy-bar">
-      <span class="pt" id="privacy-text"></span>
-      <button class="privacy-ok" id="privacy-btn" onclick="closePrivacy()"></button>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <span class="fg">vēra</span><span class="ft">· Gonthier Consulting</span>
-    </div>
-  </div>
+  <div class="footer"><span class="fg">vēra</span><span class="ft">· Gonthier Consulting</span></div>
 </div>
 <script>
 const msgs = document.getElementById('msgs');
@@ -285,23 +238,6 @@ const placeholder = {
   en: 'Write — even if it is not yet clear.',
   fr: 'Écrivez — même si ce n\'est pas encore clair.'
 };
-
-const privacyTexts = {
-  de: { text: 'Vertraulich · EU-Server · gelöscht nach 90 Tagen', btn: 'OK' },
-  fr: { text: 'Confidentiel · Serveurs EU · supprimé après 90 jours', btn: 'OK' },
-  en: { text: 'Confidential · EU servers · deleted after 90 days', btn: 'OK' }
-};
-
-const pt = privacyTexts[lang] || privacyTexts.de;
-document.getElementById('privacy-text').textContent = pt.text;
-document.getElementById('privacy-btn').textContent = pt.btn;
-
-function closePrivacy() {
-  const el = document.getElementById('privacy-bar');
-  el.style.opacity = '0';
-  el.style.transition = 'opacity 0.4s';
-  setTimeout(() => el.style.display = 'none', 400);
-}
 
 document.getElementById('first-msg').innerHTML = firstMsg[lang] || firstMsg.de;
 inp.placeholder = placeholder[lang] || placeholder.de;
