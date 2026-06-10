@@ -29,6 +29,24 @@ module.exports = async function handler(req, res) {
     };
   }
 
+  // Erkennt ob VERA bereit ist zur Übergabe
+  function detectReadyForContact(replyText, messageCount) {
+    if (messageCount < 4) return false;
+    const handoverPhrases = [
+      'darf ich kurz zusammenfassen',
+      'darf ich zusammenfassen',
+      'möchten sie rené kennenlernen',
+      'möchten sie ein gespräch mit rené',
+      'rene kennenlernen',
+      'may i briefly summarise',
+      'would you like to meet',
+      'puis-je résumer',
+      'voulez-vous rencontrer'
+    ];
+    const lower = replyText.toLowerCase();
+    return handoverPhrases.some(p => lower.includes(p));
+  }
+
   async function saveToSupabase(messages, lang, contact, isNight) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SECRET;
@@ -108,21 +126,62 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // Kontaktdaten direkt per E-Mail an René weiterleiten
+  async function sendContactToRene(contact, lang, messages, isNight) {
+    const resendKey = process.env.RESEND_API_KEY;
+    const reneEmail = process.env.RENE_EMAIL || 'rene.gonthier@gonthier-consulting.com';
+    if (!resendKey) return;
+    const modus = isNight ? 'Nacht' : 'Tag';
+    const summary = messages.slice(-12).map(m =>
+      `${m.role === 'user' ? 'Besucher' : 'Vera'}: ${m.content}`
+    ).join('\n\n');
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendKey}`
+        },
+        body: JSON.stringify({
+          from: 'vera@gonthier-consulting.com',
+          to: reneEmail,
+          subject: `Vera ${modus} — neuer Kontakt: ${contact.raw || contact.name || 'Unbekannt'}`,
+          text: [
+            `VERA KONTAKT — ${modus}`,
+            `Zeit: ${new Date().toLocaleString('de-CH')}`,
+            `Sprache: ${lang.toUpperCase()}`,
+            ``,
+            `KONTAKTDATEN:`,
+            `${contact.raw || '—'}`,
+            `Name:     ${contact.name  || '—'}`,
+            `E-Mail:   ${contact.email || '—'}`,
+            `Telefon:  ${contact.phone || '—'}`,
+            ``,
+            `GESPRÄCHSVERLAUF:`,
+            summary
+          ].join('\n')
+        })
+      });
+    } catch (err) {
+      console.error('Kontakt-Mail Fehler:', err.message);
+    }
+  }
+
   async function sendSparringSheet(messages, lang, contact, hour) {
     const resendKey = process.env.RESEND_API_KEY;
     const reneEmail = process.env.RENE_EMAIL || 'rene.gonthier@gonthier-consulting.com';
     if (!resendKey) return;
-    const sheetPrompt = `Du bist Vera. Analysiere dieses naechtliche Gespraech (${hour}:xx Uhr) und erstelle ein Sparring Sheet fuer Rene Gonthier in 4 Abschnitten:
+    const sheetPrompt = `Du bist Vera. Analysiere dieses Gespraech und erstelle ein Sparring Sheet fuer Rene Gonthier in 4 Abschnitten:
 
 1. WER: Wie spricht diese Person? Was vermeidet sie? (2-3 Saetze)
 2. ECHTER SCHMERZ: Was ist das wirkliche Problem hinter dem Gesagten? (2-3 Saetze)
-3. KONTEXT: Modus (Stille Zeugin / Pre-Mortem / Standard), Themenfeld (A/B/C/D), Zeitpunkt ${hour}:xx Uhr
+3. KONTEXT: Modus (Stille Zeugin / Pre-Mortem / Standard), Zeitpunkt ${hour}:xx Uhr
 4. RENES ERSTE FRAGE: Die eine Frage die Rene in den ersten 10 Minuten stellen soll.
 
 Kontakt: ${contact.name || 'unbekannt'} / ${contact.email || 'keine E-Mail'} / ${contact.phone || 'kein Telefon'}
 
 Gespraech:
-${messages.map(m => `${m.role === 'user' ? 'Klient' : 'Vera'}: ${m.content}`).join('\n')}
+${messages.map(m => `${m.role === 'user' ? 'Besucher' : 'Vera'}: ${m.content}`).join('\n')}
 
 Antworte kompakt, direkt, ohne Einleitung.`;
 
@@ -152,11 +211,10 @@ Antworte kompakt, direkt, ohne Einleitung.`;
         body: JSON.stringify({
           from: 'vera@gonthier-consulting.com',
           to: reneEmail,
-          subject: `Vera Nacht — ${contact.name || 'Unbekannt'} — ${new Date().toLocaleDateString('de-CH')} ${hour}:xx`,
-          text: `VERA SPARRING SHEET — Nacht-Gespraech\n\n${sheet}\n\n---\nGesendet von Vera um ${new Date().toLocaleTimeString('de-CH')}`
+          subject: `Vera Sparring Sheet — ${contact.name || 'Unbekannt'} — ${new Date().toLocaleDateString('de-CH')} ${hour}:xx`,
+          text: `VERA SPARRING SHEET\n\n${sheet}\n\n---\nGesendet von Vera um ${new Date().toLocaleTimeString('de-CH')}`
         })
       });
-      console.log('Sparring Sheet gesendet an Rene');
     } catch (err) {
       console.error('Sparring Sheet Fehler:', err.message);
     }
@@ -212,12 +270,14 @@ SPRACHE — IMMER:
 UEBERGABE AN RENE:
 Wenn alle drei Insights klar sind: "Darf ich kurz zusammenfassen was ich gehoert habe?"
 Erst nach Ja: 2-3 Saetze, locker, keine Liste.
-Dann: "Moechten Sie Rene kennenlernen?" Bei Ja: Name, E-Mail, optional Telefon.
+Dann: "Moechten Sie ein Gespraech mit Rene?"
+Bei Ja antworten mit: "Gerne. Wie heissen Sie — und wie erreicht René Sie am besten?"
+Dann warten bis der Besucher Kontaktdaten hinterlassen hat.
 
 GRAMMATIK — SCHWEIZER HOCHDEUTSCH:
 Verwende bei der Sie-Anrede immer die korrekte Hoeflichkeitsform.
-Falsch: "dass Sie verletzt worden seid" / "dass Sie Zweifel hattet" / "warum Sie weitermachen wollt"
-Richtig: "dass Sie verletzt worden sind" / "dass Sie Zweifel hatten" / "warum Sie weitermachen wollten"
+Falsch: "dass Sie verletzt worden seid" / "dass Sie Zweifel hattet"
+Richtig: "dass Sie verletzt worden sind" / "dass Sie Zweifel hatten"
 Kein ss statt ss: dass, Strasse, muss, weiss, heisst.`;
 
   const SYSTEM_DE_NACHT = `Du bist Vera — eine menschliche, stille Gespraechspartnerin fuer Gonthier Consulting. Es ist Nacht.
@@ -260,8 +320,9 @@ SPRACHE — NACHT:
 UEBERGABE:
 Wenn die drei Insights klar sind und der Mensch bereit ist:
 "Darf ich kurz zusammenfassen was ich heute Nacht gehoert habe?"
-Erst nach Ja zusammenfassen. Dann: "Rene wird morgen frueh Ihre Nachricht haben."
-Bei Ja: Name, E-Mail, optional Telefon.
+Erst nach Ja zusammenfassen. Dann: "Rene wird sich morgen frueh bei Ihnen melden."
+Bei Ja antworten mit: "Wie heissen Sie — und wie erreicht René Sie?"
+Dann warten bis der Besucher Kontaktdaten hinterlassen hat.
 
 GRAMMATIK:
 Falsch: "seid" / "hattet" / "wollt" bei Sie-Anrede.
@@ -302,7 +363,11 @@ LANGUAGE — ALWAYS:
 — Never pitch. If asked whether you are an AI: answer honestly.
 — Always formal address — even if they are informal.
 
-HANDOVER: When insights are clear — summarise after yes — ask if they want to meet Rene.`;
+HANDOVER: When insights are clear — "May I briefly summarise what I heard?"
+After yes: 2-3 sentences, no list.
+Then: "Would you like to have a conversation with René?"
+If yes: "Of course. What is your name — and how can René best reach you?"
+Then wait for the visitor to share their contact details.`;
 
   const SYSTEM_EN_NACHT = `You are Vera — a quiet presence for Gonthier Consulting. It is the middle of the night.
 
@@ -331,7 +396,10 @@ LANGUAGE — NIGHT:
 — Never: "That is a great question." / "How can I help?" / "Of course."
 — Always formal address.
 
-HANDOVER: "May I briefly summarise what I heard tonight?" After yes, summarise. Then: "Rene will have your message in the morning."`;
+HANDOVER: "May I briefly summarise what I heard tonight?"
+After yes: summarise. Then: "René will be in touch with you tomorrow morning."
+If yes: "What is your name — and how can René reach you?"
+Then wait for contact details.`;
 
   const SYSTEM_FR_TAG = `Tu es Vera — une partenaire de conversation humaine et empathique pour Gonthier Consulting. Vera signifie: la Vraie.
 
@@ -350,7 +418,7 @@ Standard: collecter trois insights pour Rene.
   Insight 01: Comment cette personne parle-t-elle? Qu'evite-t-elle?
   Insight 02: Quelle est la vraie douleur — pas le probleme declare?
   Insight 03: La seule question que Rene posera dans les 10 premieres minutes.
-Temoin Silencieux: apres un echec — presence uniquement. Pas de solutions.
+Temoin Silencieux: apres un echec — presence uniquement.
   Entree: "J'entends que quelque chose ne s'est pas passe comme vous l'espériez. Vous n'avez rien a m'expliquer — pas maintenant. Puis-je vous demander: qu'est-ce que cela vous a coute?"
 Pre-Mortem: avant une grande decision — cinq questions, une par message:
   1. Imaginez: dans 12 mois, la decision a echoue. Quelle etait la raison la plus probable?
@@ -361,7 +429,9 @@ Pre-Mortem: avant une grande decision — cinq questions, une par message:
 
 LANGAGE: Une question par message. 2-4 phrases. Jamais: "C'est une bonne question." / "Bien sur." / "Volontiers." Vouvoie toujours.
 
-PASSAGE A RENE: resumer apres oui — demander s'ils veulent rencontrer Rene.`;
+PASSAGE A RENE: resumer apres oui — "Aimeriez-vous echanger directement avec Rene?"
+Si oui: "Bien sur. Comment vous appelez-vous — et comment René peut-il vous joindre?"
+Attendre que le visiteur laisse ses coordonnees.`;
 
   const SYSTEM_FR_NACHT = `Tu es Vera — une presence silencieuse pour Gonthier Consulting. Il est tard dans la nuit.
 
@@ -377,16 +447,40 @@ Presence uniquement — pas de solutions, pas "ca ira mieux", pas "ca arrive a t
 Entree: "Il est tard. Je suis la. Qu'est-ce qui vous empeche de dormir?"
 
 INSIGHTS POUR RENE: toujours en arriere-plan.
-Insight 01: Comment cette personne parle-t-elle la nuit?
-Insight 02: Quelle est la vraie douleur?
-Insight 03: La question que Rene posera le matin.
 
 LANGAGE NOCTURNE: Encore plus court. Parfois une phrase. Jamais de listes. Vouvoie toujours.
 
-PASSAGE: "Puis-je resumer ce que j'ai entendu cette nuit?" Apres oui: "Rene aura votre message demain matin."`;
+PASSAGE: "Puis-je resumer ce que j'ai entendu cette nuit?" Apres oui: resumer.
+Puis: "René vous contactera demain matin."
+Si oui: "Comment vous appelez-vous — et comment René peut-il vous joindre?"
+Attendre les coordonnees.`;
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+
+    // ── Kontaktdaten-Übergabe (separater Action-Aufruf vom Frontend) ────────
+    if (body?.action === 'saveContact') {
+      const { raw, lang: cLang, messages: cMessages, isNight: cNight } = body;
+      const contact = {
+        raw,
+        ...extractContact([{ role: 'user', content: raw }])
+      };
+      const fullContact = {
+        ...contact,
+        ...extractContact(cMessages || [])
+      };
+      if (!fullContact.name && contact.raw) fullContact.name = contact.raw.split(/[\n,]+/)[0].trim();
+
+      await Promise.all([
+        saveToSupabase(cMessages || [], cLang || 'de', fullContact, cNight || false),
+        saveToHubSpot(fullContact, cLang || 'de', cMessages || [], cNight || false),
+        sendContactToRene(fullContact, cLang || 'de', cMessages || [], cNight || false),
+        sendSparringSheet(cMessages || [], cLang || 'de', fullContact, new Date().getHours())
+      ]);
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── Normaler Chat-Aufruf ─────────────────────────────────────────────────
     const messages = body?.messages || [];
     const isNight = body?.isNight === true;
     const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
@@ -394,18 +488,14 @@ PASSAGE: "Puis-je resumer ce que j'ai entendu cette nuit?" Apres oui: "Rene aura
     const initialLang = body?.lang || 'de';
     const lang = detectLang(lastUserText, initialLang);
     const hour = new Date().getHours();
-
     const contact = extractContact(messages);
 
+    // Wenn E-Mail bereits im Gespräch erwähnt wurde → sofort speichern
     if (contact.email) {
       await Promise.all([
         saveToSupabase(messages, lang, contact, isNight),
         saveToHubSpot(contact, lang, messages, isNight)
       ]);
-    }
-
-    if (isNight && messages.length >= 6) {
-      sendSparringSheet(messages, lang, contact, hour).catch(console.error);
     }
 
     let system;
@@ -437,10 +527,13 @@ PASSAGE: "Puis-je resumer ce que j'ai entendu cette nuit?" Apres oui: "Rene aura
       .replace(/–/g, ',')
       .replace(/ß/g, 'ss');
 
-    return res.status(200).json({ reply, lang });
+    // Signal: Vera hat Übergabe-Phrase verwendet → Frontend zeigt Kontakt-Panel
+    const readyForContact = detectReadyForContact(reply, messages.length);
+
+    return res.status(200).json({ reply, lang, readyForContact });
 
   } catch (err) {
     console.error('Error:', err.message);
-    return res.status(200).json({ reply: 'Vera ist kurz nicht erreichbar.' });
+    return res.status(200).json({ reply: 'Vera ist kurz nicht erreichbar.', lang: 'de' });
   }
 };
