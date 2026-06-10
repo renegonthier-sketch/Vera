@@ -295,6 +295,9 @@ const hour = new Date().getHours();
 const isNight = hour >= 22 || hour < 6;
 shell.classList.add(isNight ? 'night' : 'day');
 
+let contactCaptured = false;
+let awaitingContact = false;
+
 const firstMsgDay = {
   de: 'Sie sind auf dieser Seite gelandet. Das passiert nicht zufällig.<br><br>Was beschäftigt Sie gerade wirklich?',
   en: 'You have landed on this page. That does not happen by chance.<br><br>What is really on your mind right now?',
@@ -311,6 +314,18 @@ const placeholder = {
   de: 'Schreiben Sie — auch wenn es unfertig ist.',
   en: 'Write — even if it is not yet clear.',
   fr: 'Écrivez — même si ce n\'est pas encore clair.'
+};
+
+const contactPlaceholder = {
+  de: 'Name — und E-Mail oder Telefon',
+  en: 'Name — and email or phone',
+  fr: 'Nom — et email ou téléphone'
+};
+
+const confirmMsg = {
+  de: 'René weiss bereits, worum es geht — bevor Sie das erste Wort sprechen.\n\nEr meldet sich bei Ihnen.',
+  en: 'René already knows what this is about — before you say a word.\n\nHe will be in touch.',
+  fr: 'René sait déjà de quoi il s\'agit — avant même que vous parliez.\n\nIl vous contactera.'
 };
 
 const firstMsg = isNight ? firstMsgNight : firstMsgDay;
@@ -334,13 +349,61 @@ function showTyping() {
 }
 function removeTyping() { document.getElementById('typing')?.remove(); }
 
+function showContactCapture() {
+  awaitingContact = true;
+  const labels = {
+    de: 'Wie heissen Sie — und wie erreicht René Sie am besten?',
+    en: 'What is your name — and how can René best reach you?',
+    fr: 'Comment vous appelez-vous — et comment René peut-il vous joindre?'
+  };
+  addV(labels[lang] || labels.de);
+  inp.placeholder = contactPlaceholder[lang] || contactPlaceholder.de;
+  inp.focus();
+}
+
+async function saveContact(raw) {
+  try {
+    await fetch('/api/vera', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'saveContact',
+        raw,
+        lang,
+        isNight,
+        messages: history
+      })
+    });
+  } catch (e) {}
+}
+
 async function send() {
-  const text = inp.value.trim(); if (!text) return;
-  inp.value = ''; inp.disabled = true; btn.disabled = true;
+  const text = inp.value.trim();
+  if (!text) return;
+
+  if (awaitingContact) {
+    awaitingContact = false;
+    contactCaptured = true;
+    inp.value = '';
+    addU(text);
+    await saveContact(text);
+    setTimeout(() => {
+      addV(confirmMsg[lang] || confirmMsg.de);
+      inp.disabled = true;
+      btn.disabled = true;
+      inp.placeholder = '';
+    }, 600);
+    return;
+  }
+
+  inp.value = '';
+  inp.disabled = true;
+  btn.disabled = true;
   addU(text);
   document.getElementById('disclaimer')?.remove();
   history.push({ role: 'user', content: text });
   showTyping();
+
   try {
     const res = await fetch('/api/vera', {
       method: 'POST',
@@ -350,7 +413,13 @@ async function send() {
     const data = await res.json();
     const reply = data.reply || 'Ein Moment bitte.';
     history.push({ role: 'assistant', content: reply });
-    removeTyping(); addV(reply);
+    removeTyping();
+    addV(reply);
+
+    if (data.readyForContact && !contactCaptured) {
+      setTimeout(() => showContactCapture(), 1400);
+    }
+
   } catch {
     removeTyping();
     addV(lang === 'fr'
@@ -359,8 +428,12 @@ async function send() {
       ? 'A technical moment — please try again shortly.'
       : 'Ein technischer Moment — bitte versuchen Sie es gleich nochmal.');
   }
-  inp.disabled = false; btn.disabled = false; inp.focus();
+
+  inp.disabled = false;
+  btn.disabled = false;
+  inp.focus();
 }
+
 btn.addEventListener('click', send);
 inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
 </script>
