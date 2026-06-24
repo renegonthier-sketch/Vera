@@ -32,16 +32,17 @@ module.exports = async function handler(req, res) {
   // Erkennt ob VERA bereit ist zur Übergabe
   function detectReadyForContact(replyText, messageCount) {
     if (messageCount < 4) return false;
+    // Nur die finale "Moechten Sie ein Gespraech"-Frage darf die Kontakt-Erfassung
+    // ausloesen — NICHT schon die erste Zusammenfassungs-Anfrage. Sonst ueberspringt
+    // das Frontend die Zusammenfassung komplett.
     const handoverPhrases = [
-      'darf ich kurz zusammenfassen',
-      'darf ich zusammenfassen',
       'möchten sie rené kennenlernen',
       'möchten sie ein gespräch mit rené',
       'rene kennenlernen',
-      'may i briefly summarise',
       'would you like to meet',
-      'puis-je résumer',
-      'voulez-vous rencontrer'
+      'would you like to have a conversation',
+      'voulez-vous rencontrer',
+      'aimeriez-vous echanger'
     ];
     const lower = replyText.toLowerCase();
     return handoverPhrases.some(p => lower.includes(p));
