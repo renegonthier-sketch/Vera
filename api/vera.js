@@ -1,9 +1,224 @@
-// ============================================================
-// VERA — System-Prompts mit NLP-Kalibrierungsschicht (v2)
-// Ersetzt die bestehenden Bloecke SYSTEM_DE_TAG, SYSTEM_DE_NACHT,
-// SYSTEM_EN_TAG, SYSTEM_EN_NACHT, SYSTEM_FR_TAG, SYSTEM_FR_NACHT
-// in api/vera.js — jeden Block 1:1 an der jeweiligen Stelle ersetzen.
-// ============================================================
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).end();
+
+  function detectLang(text, fallback = 'de') {
+    if (!text || text.trim().length < 2) return fallback;
+    const fr = /\b(je|tu|il|elle|nous|vous|ils|est|sont|que|qui|pour|avec|dans|pas|mais|merci|bonjour|oui|non|mon|ma|mes|votre|notre|une|des|les|du|au|sur|par|très|aussi|comme|tout|bien|plus|quoi|quel|quelle|donc|alors|ça|cela|cette|ce|cet)\b/i;
+    const en = /\b(I|you|we|he|she|they|the|is|are|was|were|for|with|what|how|thank|thanks|hello|hi|yes|no|my|your|our|this|that|it|do|does|did|have|has|had|will|would|can|could|should|about|from|just|also|very|good|well|right|okay|ok)\b/i;
+    const frScore = (text.match(fr) || []).length;
+    const enScore = (text.match(en) || []).length;
+    if (frScore === 0 && enScore === 0) return fallback;
+    if (frScore > enScore) return 'fr';
+    if (enScore > frScore) return 'en';
+    return fallback;
+  }
+
+  function extractContact(messages) {
+    const fullText = messages.map(m => m.content).join(' ');
+    const emailMatch = fullText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    const phoneMatch = fullText.match(/(\+41|0041|0)[\s\-]?([0-9]{2})[\s\-]?([0-9]{3})[\s\-]?([0-9]{2})[\s\-]?([0-9]{2})/);
+    const nameMatch = fullText.match(/(?:ich bin|ich heisse|mein name ist|I am|my name is|je m'appelle|je suis)\s+([A-ZÄÖÜ][a-zäöü]+(?:\s+[A-ZÄÖÜ][a-zäöü]+)?)/i);
+    return {
+      name: nameMatch ? nameMatch[1].trim() : null,
+      email: emailMatch ? emailMatch[0] : null,
+      phone: phoneMatch ? phoneMatch[0] : null
+    };
+  }
+
+  // Erkennt ob VERA bereit ist zur Übergabe
+  function detectReadyForContact(replyText, messageCount) {
+    if (messageCount < 4) return false;
+    const handoverPhrases = [
+      'darf ich kurz zusammenfassen',
+      'darf ich zusammenfassen',
+      'möchten sie rené kennenlernen',
+      'möchten sie ein gespräch mit rené',
+      'rene kennenlernen',
+      'may i briefly summarise',
+      'would you like to meet',
+      'puis-je résumer',
+      'voulez-vous rencontrer'
+    ];
+    const lower = replyText.toLowerCase();
+    return handoverPhrases.some(p => lower.includes(p));
+  }
+
+  async function saveToSupabase(messages, lang, contact, isNight) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SECRET;
+    if (!supabaseUrl || !supabaseKey) return;
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/vera_conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          lang, messages,
+          name: contact.name,
+          email: contact.email,
+          phone: contact.phone,
+          mode: isNight ? 'nacht' : 'tag'
+        })
+      });
+      if (!response.ok) console.error('Supabase Fehler:', await response.text());
+    } catch (err) {
+      console.error('Supabase Fehler:', err.message);
+    }
+  }
+
+  async function saveToHubSpot(contact, lang, messages, isNight) {
+    const token = process.env.HUBSPOT_TOKEN;
+    if (!token || !contact.email) return;
+    const modus = isNight ? 'Nacht-Vera (22-06)' : 'Vera Tag';
+    const summary = messages.slice(-10).map(m => `${m.role === 'user' ? 'Klient' : 'Vera'}: ${m.content}`).join('\n');
+    try {
+      const contactRes = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          properties: {
+            email: contact.email,
+            firstname: contact.name ? contact.name.split(' ')[0] : '',
+            lastname: contact.name ? contact.name.split(' ').slice(1).join(' ') : '',
+            phone: contact.phone || '',
+            hs_lead_status: 'NEW',
+            lifecyclestage: 'lead',
+            hs_content_membership_notes: `${modus} (${lang.toUpperCase()})\n\n${summary}`
+          }
+        })
+      });
+      if (contactRes.status === 409) {
+        const existing = await contactRes.json();
+        const contactId = existing.message?.match(/ID: (\d+)/)?.[1];
+        if (contactId) {
+          await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ properties: { hs_lead_status: 'NEW' } })
+          });
+        }
+      } else if (contactRes.ok) {
+        const contactData = await contactRes.json();
+        await fetch('https://api.hubapi.com/crm/v3/objects/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            properties: {
+              hs_note_body: `${modus} (${lang.toUpperCase()})\n\n${summary}`,
+              hs_timestamp: new Date().toISOString()
+            },
+            associations: [{ to: { id: contactData.id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }] }]
+          })
+        });
+      } else {
+        console.error('HubSpot Fehler:', await contactRes.text());
+      }
+    } catch (err) {
+      console.error('HubSpot Fehler:', err.message);
+    }
+  }
+
+  // Kontaktdaten direkt per E-Mail an René weiterleiten
+  async function sendContactToRene(contact, lang, messages, isNight) {
+    const resendKey = process.env.RESEND_API_KEY;
+    const reneEmail = process.env.RENE_EMAIL || 'rene.gonthier@gonthier-consulting.com';
+    if (!resendKey) return;
+    const modus = isNight ? 'Nacht' : 'Tag';
+    const summary = messages.slice(-12).map(m =>
+      `${m.role === 'user' ? 'Besucher' : 'Vera'}: ${m.content}`
+    ).join('\n\n');
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendKey}`
+        },
+        body: JSON.stringify({
+          from: 'vera@gonthier-consulting.com',
+          to: reneEmail,
+          subject: `Vera ${modus} — neuer Kontakt: ${contact.raw || contact.name || 'Unbekannt'}`,
+          text: [
+            `VERA KONTAKT — ${modus}`,
+            `Zeit: ${new Date().toLocaleString('de-CH')}`,
+            `Sprache: ${lang.toUpperCase()}`,
+            ``,
+            `KONTAKTDATEN:`,
+            `${contact.raw || '—'}`,
+            `Name:     ${contact.name  || '—'}`,
+            `E-Mail:   ${contact.email || '—'}`,
+            `Telefon:  ${contact.phone || '—'}`,
+            ``,
+            `GESPRÄCHSVERLAUF:`,
+            summary
+          ].join('\n')
+        })
+      });
+    } catch (err) {
+      console.error('Kontakt-Mail Fehler:', err.message);
+    }
+  }
+
+  async function sendSparringSheet(messages, lang, contact, hour) {
+    const resendKey = process.env.RESEND_API_KEY;
+    const reneEmail = process.env.RENE_EMAIL || 'rene.gonthier@gonthier-consulting.com';
+    if (!resendKey) return;
+    const sheetPrompt = `Du bist Vera. Analysiere dieses Gespraech und erstelle ein Sparring Sheet fuer Rene Gonthier in 4 Abschnitten:
+
+1. WER: Wie spricht diese Person? Was vermeidet sie? (2-3 Saetze)
+2. ECHTER SCHMERZ: Was ist das wirkliche Problem hinter dem Gesagten? (2-3 Saetze)
+3. KONTEXT: Modus (Stille Zeugin / Pre-Mortem / Standard), Zeitpunkt ${hour}:xx Uhr
+4. RENES ERSTE FRAGE: Die eine Frage die Rene in den ersten 10 Minuten stellen soll.
+
+Kontakt: ${contact.name || 'unbekannt'} / ${contact.email || 'keine E-Mail'} / ${contact.phone || 'kein Telefon'}
+
+Gespraech:
+${messages.map(m => `${m.role === 'user' ? 'Besucher' : 'Vera'}: ${m.content}`).join('\n')}
+
+Antworte kompakt, direkt, ohne Einleitung.`;
+
+    try {
+      const sheetRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 600,
+          messages: [{ role: 'user', content: sheetPrompt }]
+        })
+      });
+      const sheetData = await sheetRes.json();
+      const sheet = sheetData?.content?.[0]?.text || 'Sparring Sheet konnte nicht generiert werden.';
+
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendKey}`
+        },
+        body: JSON.stringify({
+          from: 'vera@gonthier-consulting.com',
+          to: reneEmail,
+          subject: `Vera Sparring Sheet — ${contact.name || 'Unbekannt'} — ${new Date().toLocaleDateString('de-CH')} ${hour}:xx`,
+          text: `VERA SPARRING SHEET\n\n${sheet}\n\n---\nGesendet von Vera um ${new Date().toLocaleTimeString('de-CH')}`
+        })
+      });
+    } catch (err) {
+      console.error('Sparring Sheet Fehler:', err.message);
+    }
+  }
 
   const SYSTEM_DE_TAG = `Du bist Vera — eine menschliche, stille, empathische Gespraechspartnerin fuer Gonthier Consulting. Vera bedeutet: die Wahre.
 
