@@ -297,6 +297,9 @@ shell.classList.add(isNight ? 'night' : 'day');
 
 let contactCaptured = false;
 let awaitingContact = false;
+let contactRetries = 0;
+let pendingContactText = '';
+
 
 const firstMsgDay = {
   de: 'Sie sind auf dieser Seite gelandet. Das passiert nicht zufällig.<br><br>Was beschäftigt Sie gerade wirklich?',
@@ -327,6 +330,13 @@ const confirmMsg = {
   en: 'René already knows what this is about — before you say a word.\n\nHe will be in touch.',
   fr: 'René sait déjà de quoi il s\'agit — avant même que vous parliez.\n\nIl vous contactera.'
 };
+
+const contactRetryMsg = {
+  de: 'Und unter welcher Telefonnummer oder E-Mail-Adresse erreicht René Sie am besten?',
+  en: 'And what phone number or email address can René best reach you at?',
+  fr: 'Et à quel numéro de téléphone ou adresse e-mail René peut-il vous joindre?'
+};
+
 
 const firstMsg = isNight ? firstMsgNight : firstMsgDay;
 document.getElementById('first-msg').innerHTML = firstMsg[lang] || firstMsg.de;
@@ -382,11 +392,26 @@ async function send() {
   if (!text) return;
 
   if (awaitingContact) {
-    awaitingContact = false;
-    contactCaptured = true;
     inp.value = '';
     addU(text);
-    await saveContact(text);
+
+    const hasEmail = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(text);
+    const hasPhone = /(\+?\d[\d\s\-\/]{6,}\d)/.test(text);
+
+    if (!hasEmail && !hasPhone && contactRetries < 1) {
+      contactRetries++;
+      pendingContactText = text;
+      setTimeout(() => {
+        addV(contactRetryMsg[lang] || contactRetryMsg.de);
+      }, 600);
+      return;
+    }
+
+    const fullRaw = pendingContactText ? (pendingContactText + ' ' + text) : text;
+
+    awaitingContact = false;
+    contactCaptured = true;
+    await saveContact(fullRaw);
     setTimeout(() => {
       addV(confirmMsg[lang] || confirmMsg.de);
       inp.disabled = true;
