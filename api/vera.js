@@ -543,18 +543,58 @@ Attendre les coordonnees.`;
     else if (lang === 'en') system = isNight ? SYSTEM_EN_NACHT : SYSTEM_EN_TAG;
     else system = isNight ? SYSTEM_DE_NACHT : SYSTEM_DE_TAG;
 
-    // ── Harte Uebergabe-Erzwingung ab der 5. Antwort ──────────────────────────
-    // Promptbasiertes Selbst-Zaehlen ist unzuverlaessig — der Server zaehlt
-    // stattdessen exakt mit und zwingt die Uebergabe, sobald Vera bereits
-    // 4 Antworten gegeben hat (die jetzige Antwort waere die 5.).
+    // ── Stufen-Erzwingung der Uebergabe ab der 5. Antwort ─────────────────────
+    // Promptbasiertes Selbst-Verfolgen des Ablaufs ist unzuverlaessig — der
+    // Server prueft stattdessen den tatsaechlichen Gespraechsstand (wurde
+    // bereits zusammengefasst? wurde nach einem Gespraech gefragt? liegt ein
+    // Kontaktweg vor?) und erzwingt exakt den naechsten fehlenden Schritt.
     const assistantCount = messages.filter(m => m.role === 'assistant').length;
+    const allAssistantText = messages
+      .filter(m => m.role === 'assistant')
+      .map(m => (typeof m.content === 'string' ? m.content : ''))
+      .join(' ')
+      .toLowerCase();
+
+    const hasSummarized = /zusammenfass|summaris|summariz|r[ée]sum/.test(allAssistantText);
+    const hasAskedForConversation = /gespr[äa]ch mit ren|conversation with ren|echanger.*avec ren|[ée]changer.*ren/.test(allAssistantText);
+    const hasAskedForReach = /erreicht ren|how can ren[ée]|peut[- ]il vous joindre|peut.*ren[ée].*joindre/.test(allAssistantText);
+    const hasReachableContact = !!(contact.email || contact.phone);
+
     if (assistantCount >= 4) {
-      const forceLine = lang === 'fr'
-        ? '\n\nINSTRUCTION IMPERATIVE — TRANSFERT MAINTENANT: Tu as deja donne ' + assistantCount + ' reponses. Cette reponse NE DOIT PAS contenir de nouvelle question de fond. Reponds uniquement avec la phrase de transfert ("Puis-je resumer ce que j\'ai entendu' + (isNight ? ' cette nuit' : '') + '?").'
-        : lang === 'en'
-        ? '\n\nMANDATORY INSTRUCTION — HANDOVER NOW: You have already given ' + assistantCount + ' replies. This reply MUST NOT contain another substantive question. Respond only with the handover phrase ("May I briefly summarise what I heard' + (isNight ? ' tonight' : '') + '?").'
-        : '\n\nZWINGENDE ANWEISUNG — UEBERGABE JETZT: Du hast bereits ' + assistantCount + ' Antworten gegeben. Diese Antwort darf KEINE weitere inhaltliche Frage mehr enthalten. Antworte ausschliesslich mit der Uebergabe-Phrase ("Darf ich kurz zusammenfassen was ich' + (isNight ? ' heute Nacht' : '') + ' gehoert habe?").';
-      system = system + forceLine;
+      let stageLine = '';
+
+      if (!hasSummarized) {
+        stageLine = lang === 'fr'
+          ? '\n\nINSTRUCTION IMPERATIVE: Cette reponse DOIT etre exactement la phrase de transfert ("Puis-je resumer ce que j\'ai entendu' + (isNight ? ' cette nuit' : '') + '?") — rien d\'autre, aucune nouvelle question.'
+          : lang === 'en'
+          ? '\n\nMANDATORY INSTRUCTION: This reply MUST be exactly the handover phrase ("May I briefly summarise what I heard' + (isNight ? ' tonight' : '') + '?") — nothing else, no new question.'
+          : '\n\nZWINGENDE ANWEISUNG: Diese Antwort MUSS exakt die Uebergabe-Phrase sein ("Darf ich kurz zusammenfassen was ich' + (isNight ? ' heute Nacht' : '') + ' gehoert habe?") — nichts anderes, keine neue Frage.';
+      } else if (!hasAskedForConversation) {
+        stageLine = lang === 'fr'
+          ? '\n\nINSTRUCTION IMPERATIVE: Donne maintenant le resume en 2-3 phrases, puis demande exactement: "Aimeriez-vous echanger directement avec Rene?" — rien d\'autre.'
+          : lang === 'en'
+          ? '\n\nMANDATORY INSTRUCTION: Now give the 2-3 sentence summary, then ask exactly: "Would you like to have a conversation with René?" — nothing else.'
+          : '\n\nZWINGENDE ANWEISUNG: Gib jetzt die 2-3 Saetze Zusammenfassung, dann frage exakt: "Moechten Sie ein Gespraech mit Rene?" — nichts anderes.';
+      } else if (!hasAskedForReach) {
+        stageLine = lang === 'fr'
+          ? '\n\nINSTRUCTION IMPERATIVE: Cette reponse DOIT demander exactement: "Comment vous appelez-vous — et comment René peut-il vous joindre (telephone ou e-mail)?" — sois precis sur le canal, ne te contente pas d\'un nom.'
+          : lang === 'en'
+          ? '\n\nMANDATORY INSTRUCTION: This reply MUST ask exactly: "What is your name — and how can René best reach you (phone or email)?" — be explicit about the channel, do not settle for a name alone.'
+          : '\n\nZWINGENDE ANWEISUNG: Diese Antwort MUSS exakt fragen: "Wie heissen Sie — und wie erreicht René Sie am besten, per Telefon oder E-Mail?" — frage explizit nach dem Kanal, nicht nur nach dem Namen.';
+      } else if (!hasReachableContact) {
+        stageLine = lang === 'fr'
+          ? '\n\nINSTRUCTION IMPERATIVE: Le visiteur n\'a donne qu\'un nom, pas de telephone ni d\'e-mail. Cette reponse DOIT redemander specifiquement: "Sous quel numero ou quelle adresse e-mail René peut-il vous joindre?" Ne cloture pas sans cette information.'
+          : lang === 'en'
+          ? '\n\nMANDATORY INSTRUCTION: The visitor has only given a name, no phone or email. This reply MUST specifically ask again: "What phone number or email address can René reach you at?" Do not close the conversation without this information.'
+          : '\n\nZWINGENDE ANWEISUNG: Der Besucher hat nur einen Namen genannt, kein Telefon und keine E-Mail. Diese Antwort MUSS gezielt nachfragen: "Unter welcher Telefonnummer oder E-Mail-Adresse erreicht Sie Rene am besten?" Schliesse das Gespraech nicht ohne diese Information ab.';
+      } else {
+        stageLine = lang === 'fr'
+          ? '\n\nINSTRUCTION: Toutes les informations sont reunies. Cloture brievement — René va la contacter.'
+          : lang === 'en'
+          ? '\n\nINSTRUCTION: All information is gathered. Close briefly — René will reach out.'
+          : '\n\nANWEISUNG: Alle Informationen liegen vor. Schliesse kurz ab — Rene wird sich melden.';
+      }
+      system = system + stageLine;
     }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
