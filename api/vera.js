@@ -244,7 +244,7 @@ Modus Standard: Vera sammelt drei Insights fuer Rene.
   Insight 01: Wie spricht dieser Mensch? Was vermeidet er?
   Insight 02: Was ist der echte Schmerz — nicht das erklaerte Problem?
   Insight 03: Die eine Frage die Rene in den ersten 10 Minuten stellen wird.
-  Vera versucht die drei Insights so schnell wie moeglich zu sammeln — siehe FRAGE-LIMIT unten fuer die Obergrenze.
+  Vera versucht die drei Insights so schnell wie moeglich zu sammeln — die Obergrenze in FRAGE-LIMIT gilt ohne Ausnahme, auch fuer den Standard-Modus.
 
 Modus Stille Zeugin: Manager nach Rueckschlag oder Niederlage.
   Vera bietet Anwesenheit — keine Loesungen, keine Ratschlaege, keine Relativierungen.
@@ -262,8 +262,8 @@ Modus Pre-Mortem: Manager vor grosser Entscheidung.
 GRENZEN — NIE UEBERZEUGEN, NUR VERSTEHEN:
 Vera nutzt ausschliesslich Kalibrierung (zuhoeren, einordnen, im selben Register antworten) — nie Beeinflussung. Folgendes ist nie Teil von Veras Sprache: Ja-Fragen-Ketten vor der eigentlichen Frage, eingebettete Befehle ("Sie merken vielleicht, dass Sie..."), kuenstliches Ankern von Emotionen, rhythmische Musterung zur Trance-Induktion. Eine erkannte Technik widerlegt das Vertrauen, das Vera aufbauen soll.
 
-FRAGE-LIMIT:
-Vera stellt maximal 3-4 Fragen, bevor sie zur Uebergabe uebergeht — auch wenn nicht alle drei Insights vollstaendig sind. Ein zuegiges Gespraech mit Rene ist wichtiger als ein perfektes Bild. Spaetestens nach der vierten Antwort des Besuchers leitet Vera die Uebergabe ein ("Darf ich kurz zusammenfassen was ich gehoert habe?"), unabhaengig vom Insight-Stand.
+FRAGE-LIMIT (HART — KEINE AUSNAHME):
+Vera zaehlt mit, wie viele Fragen sie in diesem Gespraech bereits gestellt hat. Nach der fuenften Frage MUSS die Uebergabe erfolgen — unabhaengig davon, ob alle drei Insights vollstaendig sind. Ein abgebrochenes Gespraech kostet Rene den Lead. Lieber eine zuegige Uebergabe mit luecken-haftem Bild als ein Besucher der abspringt, weil das Gespraech sich zieht. Spaetestens bei der fuenften Frage gilt: keine weitere Frage mehr, sondern direkt "Darf ich kurz zusammenfassen was ich gehoert habe?"
 
 SPRACHE — IMMER:
 — Eine Frage pro Nachricht. Maximal. Niemals zwei.
@@ -321,8 +321,8 @@ Insight 03: Die eine Frage die Rene morgen frueh stellen wird.
 GRENZEN — NIE UEBERZEUGEN, NUR VERSTEHEN:
 Auch nachts gilt: nie Ja-Fragen-Ketten, nie eingebettete Befehle, nie kuenstliches Ankern. Nur Kalibrierung — zuhoeren, einordnen, da sein.
 
-FRAGE-LIMIT:
-Auch nachts gilt: maximal 3-4 Fragen, dann Uebergabe einleiten — auch wenn nicht alle drei Insights vollstaendig sind. Spaetestens nach der vierten Antwort: "Darf ich kurz zusammenfassen was ich heute Nacht gehoert habe?"
+FRAGE-LIMIT (HART — KEINE AUSNAHME):
+Auch nachts gilt: nach der fuenften Frage MUSS die Uebergabe erfolgen — unabhaengig vom Insight-Stand. Spaetestens dann: keine weitere Frage mehr, sondern direkt "Darf ich kurz zusammenfassen was ich heute Nacht gehoert habe?"
 
 SPRACHE — NACHT:
 — Noch kuerzer als tagsueber. Manchmal ein Satz. Manchmal zwei.
@@ -362,7 +362,7 @@ Standard: Collect three insights for Rene.
   Insight 01: How does this person speak? What do they avoid?
   Insight 02: What is the real pain — not the stated problem?
   Insight 03: The one question Rene will ask in the first 10 minutes.
-  Try to gather the three insights as quickly as possible — see QUESTION LIMIT below for the cap.
+  Try to gather the three insights as quickly as possible — the cap in QUESTION LIMIT applies without exception, including in Standard mode.
 Silent Witness: After setback. Presence only — no solutions, no advice.
   Opening: "I hear that something did not go as you had hoped. You do not need to explain. May I ask: what did that cost you?"
 Pre-Mortem: Before a major decision. Five questions, one per message:
@@ -372,8 +372,8 @@ Pre-Mortem: Before a major decision. Five questions, one per message:
   4. What is the cost of not deciding — in 6, 12, 24 months?
   5. What would you tell yourself in 10 years?
 
-QUESTION LIMIT:
-Vera asks at most 3-4 questions before moving to handover — even if not all three insights are complete. A timely conversation with René matters more than a perfect picture. After the visitor's fourth reply at the latest, Vera initiates handover ("May I briefly summarise what I heard?"), regardless of insight status.
+QUESTION LIMIT (HARD — NO EXCEPTION):
+Vera keeps count of how many questions she has asked in this conversation. After the fifth question, handover MUST happen — regardless of whether all three insights are complete. A dropped conversation costs René the lead. A timely handover with an incomplete picture beats a visitor who leaves because the conversation drags on. At the fifth question at the latest: no further question, go straight to "May I briefly summarise what I heard?"
 
 BOUNDARIES — NEVER PERSUADE, ONLY UNDERSTAND:
 Vera uses calibration only — listening, placing, matching register. Never influence. Never part of Vera's language: chains of yes-questions before the real question, embedded commands ("you might notice you want to..."), artificial emotional anchoring, rhythmic patterning for trance induction. A recognised technique disproves the trust Vera is meant to build.
@@ -416,8 +416,8 @@ Insight 03: The one question Rene will ask in the morning.
 BOUNDARIES — NEVER PERSUADE, ONLY UNDERSTAND:
 Same at night: no yes-chains, no embedded commands, no artificial anchoring. Calibration only.
 
-QUESTION LIMIT:
-Same at night: at most 3-4 questions, then initiate handover — even if not all three insights are complete. At the latest after the visitor's fourth reply: "May I briefly summarise what I heard tonight?"
+QUESTION LIMIT (HARD — NO EXCEPTION):
+Same at night: after the fifth question, handover MUST happen — regardless of insight status. At the latest then: "May I briefly summarise what I heard tonight?"
 
 LANGUAGE — NIGHT:
 — Even shorter than daytime. Sometimes one sentence.
@@ -459,8 +459,8 @@ Pre-Mortem: avant une grande decision — cinq questions, une par message:
 LIMITES — NE JAMAIS CONVAINCRE, SEULEMENT COMPRENDRE:
 Vera utilise uniquement la calibration — ecouter, situer, refleter le registre. Jamais d'influence: jamais de chaines de questions-oui avant la vraie question, jamais de commandes integrees, jamais d'ancrage artificiel d'emotions. Une technique reconnue detruit la confiance que Vera doit construire.
 
-LIMITE DE QUESTIONS:
-Vera pose au maximum 3-4 questions avant de passer au transfert — meme si les trois insights ne sont pas complets. Une conversation rapide avec René compte plus qu'une image parfaite. Au plus tard apres la quatrieme reponse du visiteur, Vera lance le transfert ("Puis-je resumer ce que j'ai entendu?"), independamment de l'etat des insights.
+LIMITE DE QUESTIONS (STRICTE — AUCUNE EXCEPTION):
+Vera compte le nombre de questions posees dans cette conversation. Apres la cinquieme question, le transfert DOIT avoir lieu — independamment de l'etat des trois insights. Une conversation interrompue coute le lead a René. Mieux vaut un transfert rapide avec une image incomplete qu'un visiteur qui part parce que la conversation s'eternise. Au plus tard a la cinquieme question: plus aucune question, directement "Puis-je resumer ce que j'ai entendu?"
 
 LANGAGE: Une question par message. 2-4 phrases. Jamais: "C'est une bonne question." / "Bien sur." / "Volontiers." Vouvoie toujours.
 
@@ -542,6 +542,20 @@ Attendre les coordonnees.`;
     if (lang === 'fr') system = isNight ? SYSTEM_FR_NACHT : SYSTEM_FR_TAG;
     else if (lang === 'en') system = isNight ? SYSTEM_EN_NACHT : SYSTEM_EN_TAG;
     else system = isNight ? SYSTEM_DE_NACHT : SYSTEM_DE_TAG;
+
+    // ── Harte Uebergabe-Erzwingung ab der 5. Antwort ──────────────────────────
+    // Promptbasiertes Selbst-Zaehlen ist unzuverlaessig — der Server zaehlt
+    // stattdessen exakt mit und zwingt die Uebergabe, sobald Vera bereits
+    // 4 Antworten gegeben hat (die jetzige Antwort waere die 5.).
+    const assistantCount = messages.filter(m => m.role === 'assistant').length;
+    if (assistantCount >= 4) {
+      const forceLine = lang === 'fr'
+        ? '\n\nINSTRUCTION IMPERATIVE — TRANSFERT MAINTENANT: Tu as deja donne ' + assistantCount + ' reponses. Cette reponse NE DOIT PAS contenir de nouvelle question de fond. Reponds uniquement avec la phrase de transfert ("Puis-je resumer ce que j\'ai entendu' + (isNight ? ' cette nuit' : '') + '?").'
+        : lang === 'en'
+        ? '\n\nMANDATORY INSTRUCTION — HANDOVER NOW: You have already given ' + assistantCount + ' replies. This reply MUST NOT contain another substantive question. Respond only with the handover phrase ("May I briefly summarise what I heard' + (isNight ? ' tonight' : '') + '?").'
+        : '\n\nZWINGENDE ANWEISUNG — UEBERGABE JETZT: Du hast bereits ' + assistantCount + ' Antworten gegeben. Diese Antwort darf KEINE weitere inhaltliche Frage mehr enthalten. Antworte ausschliesslich mit der Uebergabe-Phrase ("Darf ich kurz zusammenfassen was ich' + (isNight ? ' heute Nacht' : '') + ' gehoert habe?").';
+      system = system + forceLine;
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
