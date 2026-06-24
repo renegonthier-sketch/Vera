@@ -36,12 +36,16 @@ module.exports = async function handler(req, res) {
     // ausloesen — NICHT schon die erste Zusammenfassungs-Anfrage. Sonst ueberspringt
     // das Frontend die Zusammenfassung komplett.
     const handoverPhrases = [
-      'möchten sie rené kennenlernen',
+      'an rené weitergebe',
+      'an rene weitergebe',
+      'pass on to rené',
+      'pass on to rene',
+      'transmettre à rené',
+      'transmettre a rene',
+      // Fallback fuer ggf. abweichende Formulierungen des Modells
       'möchten sie ein gespräch mit rené',
       'rene kennenlernen',
-      'would you like to meet',
       'would you like to have a conversation',
-      'voulez-vous rencontrer',
       'aimeriez-vous echanger'
     ];
     const lower = replyText.toLowerCase();
@@ -278,7 +282,7 @@ SPRACHE — IMMER:
 UEBERGABE AN RENE:
 Wenn alle drei Insights klar sind: "Darf ich kurz zusammenfassen was ich gehoert habe?"
 Erst nach Ja: 2-3 Saetze, locker, keine Liste.
-Dann: "Moechten Sie ein Gespraech mit Rene?"
+Dann: "Ich denke, das ist eine Frage, die ich gerne an Rene weitergebe. Ist es fuer Sie ok, das vertieft anzuschauen?"
 Bei Ja antworten mit: "Gerne. Wie heissen Sie — und wie erreicht René Sie am besten?"
 Dann warten bis der Besucher Kontaktdaten hinterlassen hat.
 
@@ -387,7 +391,7 @@ LANGUAGE — ALWAYS:
 
 HANDOVER: When insights are clear — "May I briefly summarise what I heard?"
 After yes: 2-3 sentences, no list.
-Then: "Would you like to have a conversation with René?"
+Then: "I think this is something I would like to pass on to René. Would it be okay to look into this with him in more depth?"
 If yes: "Of course. What is your name — and how can René best reach you?"
 Then wait for the visitor to share their contact details.`;
 
@@ -465,7 +469,7 @@ Vera compte le nombre de questions posees dans cette conversation. Apres la cinq
 
 LANGAGE: Une question par message. 2-4 phrases. Jamais: "C'est une bonne question." / "Bien sur." / "Volontiers." Vouvoie toujours.
 
-PASSAGE A RENE: resumer apres oui — "Aimeriez-vous echanger directement avec Rene?"
+PASSAGE A RENE: resumer apres oui — "Je pense que c'est une question que j'aimerais transmettre a Rene. Est-ce que cela vous convient d'approfondir cela avec lui?"
 Si oui: "Bien sur. Comment vous appelez-vous — et comment René peut-il vous joindre?"
 Attendre que le visiteur laisse ses coordonnees.`;
 
@@ -557,7 +561,7 @@ Attendre les coordonnees.`;
       .toLowerCase();
 
     const hasSummarized = /zusammenfass|summaris|summariz|r[ée]sum/.test(allAssistantText);
-    const hasAskedForConversation = /gespr[äa]ch mit ren|conversation with ren|echanger.*avec ren|[ée]changer.*ren/.test(allAssistantText);
+    const hasAskedForConversation = /weitergeb|pass.*on to ren|transmettre.*ren/.test(allAssistantText);
     const hasAskedForReach = /erreicht ren|how can ren[ée]|peut[- ]il vous joindre|peut.*ren[ée].*joindre/.test(allAssistantText);
     const hasReachableContact = !!(contact.email || contact.phone);
 
@@ -572,10 +576,10 @@ Attendre les coordonnees.`;
           : '\n\nZWINGENDE ANWEISUNG: Diese Antwort MUSS exakt die Uebergabe-Phrase sein ("Darf ich kurz zusammenfassen was ich' + (isNight ? ' heute Nacht' : '') + ' gehoert habe?") — nichts anderes, keine neue Frage.';
       } else if (!hasAskedForConversation) {
         stageLine = lang === 'fr'
-          ? '\n\nINSTRUCTION IMPERATIVE: Donne maintenant le resume en 2-3 phrases, puis demande exactement: "Aimeriez-vous echanger directement avec Rene?" — rien d\'autre.'
+          ? '\n\nINSTRUCTION IMPERATIVE: Donne maintenant le resume en 2-3 phrases, puis demande exactement: "Je pense que c\'est une question que j\'aimerais transmettre a Rene. Est-ce que cela vous convient d\'approfondir cela avec lui?" — rien d\'autre.'
           : lang === 'en'
-          ? '\n\nMANDATORY INSTRUCTION: Now give the 2-3 sentence summary, then ask exactly: "Would you like to have a conversation with René?" — nothing else.'
-          : '\n\nZWINGENDE ANWEISUNG: Gib jetzt die 2-3 Saetze Zusammenfassung, dann frage exakt: "Moechten Sie ein Gespraech mit Rene?" — nichts anderes.';
+          ? '\n\nMANDATORY INSTRUCTION: Now give the 2-3 sentence summary, then ask exactly: "I think this is something I would like to pass on to René. Would it be okay to look into this with him in more depth?" — nothing else.'
+          : '\n\nZWINGENDE ANWEISUNG: Gib jetzt die 2-3 Saetze Zusammenfassung, dann frage exakt: "Ich denke, das ist eine Frage, die ich gerne an Rene weitergebe. Ist es fuer Sie ok, das vertieft anzuschauen?" — nichts anderes.';
       } else if (!hasAskedForReach) {
         stageLine = lang === 'fr'
           ? '\n\nINSTRUCTION IMPERATIVE: Cette reponse DOIT demander exactement: "Comment vous appelez-vous — et comment René peut-il vous joindre (telephone ou e-mail)?" — sois precis sur le canal, ne te contente pas d\'un nom.'
