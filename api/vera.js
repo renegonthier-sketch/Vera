@@ -52,7 +52,41 @@ module.exports = async function handler(req, res) {
     return handoverPhrases.some(p => lower.includes(p));
   }
 
-  async function saveToSupabase(messages, lang, contact, isNight) {
+  // ── Fragen-Cap v3.3 — frueher Ausstieg ─────────────────────────────────────
+  // Der harte Cap bei Frage 5 (siehe assistantCount >= 4 weiter unten) bleibt
+  // die Obergrenze und wird serverseitig erzwungen, nicht dem Modell ueberlassen
+  // (das war schon vorher bewusst so entschieden — promptbasiertes Selbst-
+  // Tracking ist unzuverlaessig). Diese beiden Funktionen erkennen zusaetzlich
+  // zwei Situationen, in denen frueher uebergeben werden soll, statt den Cap
+  // kuenstlich auszuschoepfen. Beide sind bewusst deterministisch (keine
+  // zusaetzlichen Modell-Aufrufe, kein zusaetzliches Urteil des Modells) —
+  // gleiche Philosophie wie der Rest dieser Datei.
+
+  // Widerstand: die letzten beiden Besucher-Antworten sind einsilbig,
+  // ausweichend oder erkennbar unwillig — kein neuer Informationsgehalt.
+  function detectResistance(messages) {
+    const userMsgs = messages.filter(m => m.role === 'user');
+    if (userMsgs.length < 2) return false;
+    const dismissive = /^(ja|nein|ok|okay|k|klar|weiss nicht|weiss ich nicht|keine ahnung|keine idee|k\.a\.|vielleicht|mhm|hm|no|yes|idk|i don't know|i dont know|non|oui|je sais pas|jsp)\.?!?$/i;
+    const lastTwo = userMsgs.slice(-2);
+    const shortCount = lastTwo.filter(m => {
+      const t = (m.content || '').trim();
+      return t.length > 0 && (t.length <= 12 || dismissive.test(t));
+    }).length;
+    return shortCount === 2;
+  }
+
+  // Frueh vollstaendig: der Besucher hat bereits substanziell geantwortet.
+  // Grobe, aber schnelle Annaeherung an "die drei Insights sind vermutlich
+  // schon da" ueber Antwortlaenge/-anzahl statt ueber ein Modell-Urteil.
+  function detectEarlyReadiness(messages) {
+    const userMsgs = messages.filter(m => m.role === 'user');
+    const totalUserChars = userMsgs.reduce((sum, m) => sum + (m.content || '').length, 0);
+    const substantiveCount = userMsgs.filter(m => (m.content || '').trim().length >= 25).length;
+    return totalUserChars >= 300 && substantiveCount >= 2;
+  }
+
+  async function saveToSupabase(messages, lang, contact, isNight, meta = {}) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SECRET;
     if (!supabaseUrl || !supabaseKey) return;
@@ -70,7 +104,9 @@ module.exports = async function handler(req, res) {
           name: contact.name,
           email: contact.email,
           phone: contact.phone,
-          mode: isNight ? 'nacht' : 'tag'
+          mode: isNight ? 'nacht' : 'tag',
+          question_count: meta.questionCount ?? null,
+          handoff_reason: meta.handoffReason ?? null
         })
       });
       if (!response.ok) console.error('Supabase Fehler:', await response.text());
@@ -491,8 +527,8 @@ INSIGHTS POUR RENE: toujours en arriere-plan.
 
 LIMITES: meme la nuit — jamais de chaines de questions-oui, jamais de commandes integrees, jamais d'ancrage artificiel. Calibration uniquement.
 
-LIMITE DE QUESTIONS:
-Meme la nuit: maximum 3-4 questions, puis lancer le transfert — meme si les trois insights ne sont pas complets. Au plus tard apres la quatrieme reponse: "Puis-je resumer ce que j'ai entendu cette nuit?"
+LIMITE DE QUESTIONS (STRICTE — AUCUNE EXCEPTION):
+Meme la nuit: apres la cinquieme question, le transfert DOIT avoir lieu — independamment de l'etat des trois insights. Au plus tard alors: plus aucune question, directement "Puis-je resumer ce que j'ai entendu cette nuit?"
 
 LANGAGE NOCTURNE: Encore plus court. Parfois une phrase. Jamais de listes. Vouvoie toujours.
 
@@ -516,11 +552,23 @@ Attendre les coordonnees.`;
       };
       if (!fullContact.name && contact.raw) fullContact.name = contact.raw.split(/[\n,]+/)[0].trim();
 
+      // Fragen-Cap-Meta fuer Analyse/Sparring Sheet: retroaktiv aus dem
+      // vollstaendigen Gespraechsverlauf rekonstruiert — dieselben
+      // deterministischen Heuristiken wie im Chat-Handler unten.
+      const finalMessages = cMessages || [];
+      const finalAssistantCount = finalMessages.filter(m => m.role === 'assistant').length;
+      const finalHandoffReason = finalAssistantCount >= 4
+        ? 'cap_reached'
+        : (detectResistance(finalMessages) ? 'early_resistance' : 'early_engagement');
+
       await Promise.all([
-        saveToSupabase(cMessages || [], cLang || 'de', fullContact, cNight || false),
-        saveToHubSpot(fullContact, cLang || 'de', cMessages || [], cNight || false),
-        sendContactToRene(fullContact, cLang || 'de', cMessages || [], cNight || false),
-        sendSparringSheet(cMessages || [], cLang || 'de', fullContact, new Date().getHours())
+        saveToSupabase(finalMessages, cLang || 'de', fullContact, cNight || false, {
+          questionCount: finalAssistantCount,
+          handoffReason: finalHandoffReason
+        }),
+        saveToHubSpot(fullContact, cLang || 'de', finalMessages, cNight || false),
+        sendContactToRene(fullContact, cLang || 'de', finalMessages, cNight || false),
+        sendSparringSheet(finalMessages, cLang || 'de', fullContact, new Date().getHours())
       ]);
       return res.status(200).json({ ok: true });
     }
@@ -538,7 +586,9 @@ Attendre les coordonnees.`;
     // Wenn E-Mail bereits im Gespräch erwähnt wurde → sofort speichern
     if (contact.email) {
       await Promise.all([
-        saveToSupabase(messages, lang, contact, isNight),
+        saveToSupabase(messages, lang, contact, isNight, {
+          questionCount: messages.filter(m => m.role === 'assistant').length
+        }),
         saveToHubSpot(contact, lang, messages, isNight)
       ]);
     }
@@ -548,7 +598,7 @@ Attendre les coordonnees.`;
     else if (lang === 'en') system = isNight ? SYSTEM_EN_NACHT : SYSTEM_EN_TAG;
     else system = isNight ? SYSTEM_DE_NACHT : SYSTEM_DE_TAG;
 
-    // ── Stufen-Erzwingung der Uebergabe ab der 5. Antwort ─────────────────────
+    // ── Stufen-Erzwingung der Uebergabe ─────────────────────────────────────
     // Promptbasiertes Selbst-Verfolgen des Ablaufs ist unzuverlaessig — der
     // Server prueft stattdessen den tatsaechlichen Gespraechsstand (wurde
     // bereits zusammengefasst? wurde nach einem Gespraech gefragt? liegt ein
@@ -565,7 +615,15 @@ Attendre les coordonnees.`;
     const hasAskedForReach = /erreicht ren|how can ren[ée]|peut[- ]il vous joindre|peut.*ren[ée].*joindre/.test(allAssistantText);
     const hasReachableContact = !!(contact.email || contact.phone);
 
-    if (assistantCount >= 4) {
+    // Fragen-Cap v3.3 — frueher Ausstieg (siehe detectResistance /
+    // detectEarlyReadiness oben): der harte Cap bei Frage 5 bleibt die
+    // Obergrenze, wird aber nicht mehr kuenstlich ausgeschoepft, wenn der
+    // Besucher vorher Widerstand zeigt oder erkennbar schon genug gesagt hat.
+    const resistanceDetected = assistantCount >= 2 && detectResistance(messages);
+    const earlyReadyDetected = assistantCount >= 2 && assistantCount < 4 && detectEarlyReadiness(messages);
+    const forceHandover = assistantCount >= 4 || resistanceDetected || earlyReadyDetected;
+
+    if (forceHandover) {
       let stageLine = '';
 
       if (!hasSummarized) {
